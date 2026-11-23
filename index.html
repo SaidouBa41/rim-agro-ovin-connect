@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RIM AgroOvin Connect — V24.1 Messagerie et mobile</title>
+<title>RIM AgroOvin Connect — V25 Navigation par rubriques</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* COULEURS DU SITE */
@@ -154,6 +154,15 @@ input, select, textarea, button { max-width:100%; min-width:0; }
   .hero h1 { font-size:1.45rem; }
 }
 
+
+/* NAVIGATION PAR RUBRIQUES — V25 */
+.main-nav{position:sticky;top:0;z-index:50;background:#fff;border:1px solid #dce8dd;border-radius:14px;padding:8px;margin:0 0 18px;display:flex;gap:7px;overflow-x:auto;box-shadow:0 5px 18px rgba(20,60,35,.08);scrollbar-width:thin}
+.main-nav button{flex:0 0 auto;border:0;border-radius:10px;background:#f1f5f1;color:#244b35;padding:11px 14px;font-weight:700;cursor:pointer;white-space:nowrap}
+.main-nav button[aria-current="page"]{background:var(--green);color:#fff}
+.nav-inactive{display:none!important}
+.nav-heading{margin:0 0 14px;color:var(--green);font-size:1.35rem}
+@media(max-width:600px){.main-nav{margin-left:-4px;margin-right:-4px;border-radius:10px;padding:6px}.main-nav button{padding:10px 12px;font-size:.9rem}main{margin-top:14px}}
+
 </style>
 </head>
 <body>
@@ -163,6 +172,14 @@ input, select, textarea, button { max-width:100%; min-width:0; }
   <span>V23 · Marketplace, annuaire & demandes de services</span>
 </header>
 <main>
+  <nav class="main-nav" id="mainNavigation" aria-label="Navigation principale">
+    <button type="button" data-view="home" aria-current="page">🏠 Accueil</button>
+    <button type="button" data-view="market">🛒 Marketplace</button>
+    <button type="button" data-view="directory">👥 Annuaire</button>
+    <button type="button" data-view="services">🧰 Services</button>
+    <button type="button" data-view="messages">💬 Messagerie</button>
+    <button type="button" data-view="account">👤 Mon espace</button>
+  </nav>
   <!-- IMAGE PRINCIPALE - ACCUEIL : ajouter une image de couverture ultérieurement -->
   <section class="hero"><div class="hero-copy"><span class="hero-kicker">LE MARCHÉ AGROPASTORAL, EN UN SEUL ESPACE</span><h1>Connectons les acteurs<br>du monde agropastoral.</h1><p>Découvrez des annonces, trouvez des produits et rapprochez-vous des éleveurs, agriculteurs et fournisseurs partout en Mauritanie.</p><div class="hero-actions"><a class="hero-link primary" href="#marketplacePublic">Explorer les annonces</a><a class="hero-link outline" href="#authCards">Rejoindre la plateforme</a></div></div><div class="hero-symbol" aria-hidden="true">🐑<span>🌿</span></div></section>
 
@@ -750,5 +767,39 @@ function openListingDetails(id){
 }
 function closeListingDetails(){ $('listingDetailModal').classList.remove('open');document.body.style.overflow=''; }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeListingDetails()});
+</script>
+
+<script>
+/* Navigation mono-page : les rubriques sont affichées sans recharger le site. */
+(function(){
+ const views={
+  home:['.hero'],
+  market:['#marketplacePublic','#myFavorites'],
+  directory:['#professionalDirectory'],
+  services:['#serviceRequests'],
+  messages:['#messagingSection'],
+  account:['#sessionBar','#authCards','#memberArea','#publishCard','#myListingsCard','#adminPanel']
+ };
+ const nav=document.getElementById('mainNavigation');
+ if(!nav)return;
+ const allSelectors=[...new Set(Object.values(views).flat())];
+ function showView(name){
+  if(!views[name])name='home';
+  allSelectors.forEach(sel=>document.querySelectorAll(sel).forEach(el=>el.classList.add('nav-inactive')));
+  views[name].forEach(sel=>document.querySelectorAll(sel).forEach(el=>el.classList.remove('nav-inactive')));
+  nav.querySelectorAll('button[data-view]').forEach(btn=>{
+   if(btn.dataset.view===name)btn.setAttribute('aria-current','page');
+   else btn.removeAttribute('aria-current');
+  });
+  try{history.replaceState(null,'','#'+(name==='home'?'accueil':name));}catch(e){}
+  window.scrollTo({top:0,behavior:'smooth'});
+ }
+ nav.addEventListener('click',e=>{const btn=e.target.closest('button[data-view]');if(btn)showView(btn.dataset.view)});
+ document.querySelectorAll('.hero-actions a[href="#marketplacePublic"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();showView('market')}));
+ document.querySelectorAll('.hero-actions a[href="#authCards"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();showView('account')}));
+ // Les liens d'accès à la messagerie depuis les annonces peuvent l'afficher directement.
+ window.rimShowView=showView;
+ showView('home');
+})();
 </script>
 </body></html>
