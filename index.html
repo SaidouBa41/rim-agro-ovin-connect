@@ -163,15 +163,30 @@ input, select, textarea, button { max-width:100%; min-width:0; }
 .nav-heading{margin:0 0 14px;color:var(--green);font-size:1.35rem}
 @media(max-width:600px){.main-nav{margin-left:-4px;margin-right:-4px;border-radius:10px;padding:6px}.main-nav button{padding:10px 12px;font-size:.9rem}main{margin-top:14px}}
 
+
+/* V26 — Sidebar mobile */
+.mobile-menu-toggle{display:none;border:0;border-radius:10px;background:var(--green,#287545);color:#fff;padding:12px 16px;font-weight:800;cursor:pointer;margin:0 0 12px}
+.mobile-nav-overlay{display:none}
+@media(max-width:600px){
+ .mobile-menu-toggle{display:inline-flex;align-items:center;gap:8px}
+ .main-nav{position:fixed!important;left:0;top:0;bottom:0;width:min(82vw,310px);height:100dvh;max-height:100dvh;z-index:1001!important;margin:0!important;padding:76px 14px 20px!important;border:0!important;border-radius:0 18px 18px 0!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:9px!important;overflow-y:auto!important;overflow-x:hidden!important;background:#fff!important;box-shadow:10px 0 35px rgba(0,0,0,.22)!important;transform:translateX(-110%);transition:transform .25s ease;scrollbar-width:thin}
+ .main-nav.mobile-nav-open{transform:translateX(0)}
+ .main-nav button{width:100%;text-align:left;white-space:normal;flex:0 0 auto;padding:14px 15px!important;font-size:1rem!important}
+ .mobile-nav-overlay.mobile-overlay-open{display:block;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:1000}
+ body.mobile-nav-lock{overflow:hidden}
+}
+
 </style>
 </head>
 <body>
 <header>
   <!-- LOGO DU SITE : remplacer plus tard par le logo officiel -->
   <div><div class="brand">🐑 RIM AgroOvin Connect</div><div class="tagline">Élever aujourd’hui, nourrir demain</div></div>
-  <span>V23 · Marketplace, annuaire & demandes de services</span>
+  <span>V26 · Navigation latérale mobile</span>
 </header>
 <main>
+  <button type="button" class="mobile-menu-toggle" id="mobileMenuToggle" aria-expanded="false" aria-controls="mainNavigation">☰ Menu</button>
+  <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
   <nav class="main-nav" id="mainNavigation" aria-label="Navigation principale">
     <button type="button" data-view="home" aria-current="page">🏠 Accueil</button>
     <button type="button" data-view="market">🛒 Marketplace</button>
@@ -314,7 +329,7 @@ input, select, textarea, button { max-width:100%; min-width:0; }
     <div id="adminStatus" class="status"></div>
   </section>
 </main>
-<footer>RIM AgroOvin Connect · V24 — Messagerie et échanges</footer>
+<footer>RIM AgroOvin Connect · V26 — Navigation latérale mobile</footer>
 <script>
 // =====================================
 // CONFIGURATION SUPABASE - RIM AGROOVIN
@@ -794,7 +809,14 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeListingDetails(
   try{history.replaceState(null,'','#'+(name==='home'?'accueil':name));}catch(e){}
   window.scrollTo({top:0,behavior:'smooth'});
  }
- nav.addEventListener('click',e=>{const btn=e.target.closest('button[data-view]');if(btn)showView(btn.dataset.view)});
+ nav.addEventListener('click',e=>{const btn=e.target.closest('button[data-view]');if(btn){showView(btn.dataset.view);closeMobileNav();}});
+ const menuToggle=document.getElementById('mobileMenuToggle');
+ const overlay=document.getElementById('mobileNavOverlay');
+ function openMobileNav(){nav.classList.add('mobile-nav-open');overlay.classList.add('mobile-overlay-open');menuToggle.setAttribute('aria-expanded','true');document.body.classList.add('mobile-nav-lock');}
+ function closeMobileNav(){nav.classList.remove('mobile-nav-open');overlay.classList.remove('mobile-overlay-open');menuToggle.setAttribute('aria-expanded','false');document.body.classList.remove('mobile-nav-lock');}
+ menuToggle?.addEventListener('click',()=>nav.classList.contains('mobile-nav-open')?closeMobileNav():openMobileNav());
+ overlay?.addEventListener('click',closeMobileNav);
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileNav();});
  document.querySelectorAll('.hero-actions a[href="#marketplacePublic"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();showView('market')}));
  document.querySelectorAll('.hero-actions a[href="#authCards"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();showView('account')}));
  // Les liens d'accès à la messagerie depuis les annonces peuvent l'afficher directement.
