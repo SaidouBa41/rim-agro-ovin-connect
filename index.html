@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RIM AgroOvin Connect — V24.1 Messagerie et mobile</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* COULEURS DU SITE */
+:root{--green:#174D32;--green2:#267044;--bg:#F1F5F1;--ink:#183126;--muted:#66756c;--danger:#a52b2b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,sans-serif;scroll-behavior:smooth}
+header{background:var(--green);color:white;padding:18px 5%;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-size:1.25rem;font-weight:800}.tagline{color:#e3eadf;margin-top:5px}main{max-width:1050px;margin:28px auto;padding:0 16px}
+.hero{background:linear-gradient(120deg,var(--green),#2f774d);color:white;padding:26px;border-radius:18px;margin-bottom:20px}.hero p{line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}.card{background:white;border-radius:16px;padding:21px;box-shadow:0 5px 18px #193b2710;margin-bottom:18px}
+h2{color:var(--green);margin-top:0}label{display:block;font-weight:700;margin:12px 0 6px}input,select,textarea{width:100%;padding:12px;border:1px solid #cbd6cd;border-radius:9px;font-size:1rem;background:white;color:var(--ink)}textarea{min-height:100px;resize:vertical}
+button{background:var(--green);color:white;border:0;border-radius:9px;padding:12px 16px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:14px}button:hover{background:var(--green2)}button.secondary{background:#e7eee9;color:var(--green)}button:disabled{opacity:.55}.wide{width:100%}
+.small{font-size:.87rem;color:var(--muted);line-height:1.5}.status{display:none;margin-top:13px;padding:12px;border-radius:9px;white-space:pre-wrap}.status.ok{display:block;background:#e8f5eb;color:#1c6234}.status.err{display:block;background:#fff0f0;color:var(--danger)}
+.sessionbar{display:none;background:#e4eee6;border-radius:12px;padding:14px;margin-bottom:18px}.hidden{display:none!important}.notice{background:#fff8e9;border:1px solid #ead7a9;padding:12px;border-radius:10px;line-height:1.5}
+footer{text-align:center;color:var(--muted);padding:26px}@media(max-width:600px){.card{padding:17px}.hero{padding:20px}}
+
+.admin-panel{border:2px solid #174D32;background:#f8fbf8}
+.admin-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.admin-listing{border:1px solid #dbe5dc;border-radius:12px;padding:14px;margin:12px 0;background:#fff}
+.admin-listing img{width:100%;max-width:170px;height:130px;object-fit:cover;border-radius:8px}
+.btn-danger{background:#9e3030}.btn-danger:hover{background:#7e2222}
+.btn-approve{background:#247344}
+@media(max-width:600px){.admin-top{align-items:flex-start}}
+
+/* MARKETPLACE PUBLIC V13 */
+.market-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:24px 0 12px}
+.market-controls{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:16px}
+.market-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.market-card{background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e1e9e2;box-shadow:0 4px 14px #193b2708}
+.market-card img{width:100%;height:190px;object-fit:cover;background:#e9efe9}
+.market-card .market-body{padding:15px}.market-card h3{margin:0 0 8px;color:var(--green)}
+.market-price{font-size:1.25rem;font-weight:800;color:#267044;margin:8px 0}
+.market-meta{font-size:.9rem;color:var(--muted);margin:6px 0}
+.market-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.market-actions a{display:inline-block;text-decoration:none;padding:10px 12px;border-radius:8px;background:var(--green);color:white;font-weight:bold}.market-actions a.call{background:#e9efe9;color:var(--green)}
+@media(max-width:650px){.market-controls{grid-template-columns:1fr}.market-card img{height:175px}}
+.detail-btn{width:100%;background:#e9efe9;color:var(--green);margin-top:8px}
+.modal-overlay{position:fixed;inset:0;background:#10251bcc;z-index:1000;display:none;overflow:auto;padding:20px}
+.modal-overlay.open{display:flex;align-items:center;justify-content:center}
+.detail-modal{background:#fff;width:min(850px,100%);max-height:92vh;overflow:auto;border-radius:16px;padding:20px;position:relative}
+.modal-close{position:sticky;top:0;float:right;background:#f0f4f0;color:var(--green);margin:0 0 10px 10px}
+.detail-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:12px 0}
+.detail-gallery img{width:100%;height:145px;object-fit:cover;border-radius:10px;background:#e9efe9}
+.detail-modal h2{margin-top:6px}.detail-description{white-space:pre-wrap;line-height:1.6}
+@media(max-width:600px){.modal-overlay{padding:8px}.detail-modal{padding:14px;max-height:96vh}.detail-gallery img{height:110px}}
+
+
+/* V16 VISUAL POLISH — keep existing Supabase and feature logic intact */
+:root{--green:#174D32;--green2:#2a7549;--bg:#f3f6f2;--ink:#1c3427;--muted:#68776d;--sand:#e9dcc3}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:linear-gradient(180deg,#edf4ed 0,#f5f7f4 360px,#f3f6f2 100%);line-height:1.5}
+header{align-items:center;background:linear-gradient(110deg,#123d28,#1d603c);padding:20px max(5%,calc((100% - 1200px)/2));box-shadow:0 8px 26px #123d2820}
+.brand{letter-spacing:.2px;font-size:1.38rem}.tagline{font-size:.92rem;opacity:.94}
+main{max-width:1200px;margin:30px auto;padding:0 20px}
+.hero{position:relative;overflow:hidden;min-height:270px;padding:clamp(24px,5vw,48px);border-radius:24px;background:linear-gradient(120deg,#15452d 0%,#267046 75%,#3c8052);box-shadow:0 15px 36px #174d3220;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.hero-copy{max-width:720px;position:relative;z-index:1}.hero-kicker{font-size:.78rem;font-weight:800;letter-spacing:1.5px;color:#d5e7d7}.hero h1{font-size:clamp(1.85rem,4vw,3rem);line-height:1.1;margin:14px 0;color:white}.hero p{max-width:620px;font-size:1.04rem;color:#e7f0e7;line-height:1.65}
+.hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.hero-link{display:inline-block;text-decoration:none;border-radius:11px;padding:12px 17px;font-weight:800}.hero-link.primary{background:#f0dfbe;color:#224a31}.hero-link.outline{border:1px solid #ffffff85;color:white;background:#ffffff10}.hero-symbol{font-size:clamp(4rem,9vw,7rem);opacity:.95;position:relative;margin-right:2vw;filter:drop-shadow(0 8px 8px #092b18aa)}.hero-symbol span{font-size:.45em;position:absolute;right:-.2em;bottom:-.1em}
+.card{border:1px solid #e3ebe3;border-radius:18px;box-shadow:0 6px 24px #153e2510;padding:clamp(16px,3vw,24px);transition:box-shadow .2s,transform .2s}.card h2{letter-spacing:-.3px}.market-card{border:1px solid #e5ece5;box-shadow:0 7px 22px #153e2510;transition:transform .2s,box-shadow .2s}.market-card:hover{transform:translateY(-3px);box-shadow:0 12px 28px #153e2518}.market-card img{height:205px}.market-price{font-size:1.35rem}
+input,select,textarea{border-color:#d6e0d7;transition:border-color .15s,box-shadow .15s}input:focus,select:focus,textarea:focus{outline:none;border-color:#2a7549;box-shadow:0 0 0 3px #26704418}
+button{box-shadow:0 3px 10px #174d3215;transition:transform .15s,filter .15s}button:hover{filter:brightness(1.04);transform:translateY(-1px)}button.secondary{box-shadow:none}
+.sessionbar{border:1px solid #c9ddce}.admin-panel{border-color:#174d32}.notice{border-radius:12px}
+footer{padding:34px 18px;color:#64746a;font-size:.92rem}
+@media(max-width:700px){main{margin:18px auto;padding:0 12px}.hero{min-height:unset;border-radius:18px}.hero-symbol{font-size:3.5rem;align-self:flex-end;margin:0}.hero h1{font-size:1.85rem}.hero p{font-size:.96rem}.hero-actions{gap:8px}.hero-link{padding:11px 13px}.market-card img{height:180px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
+
+
+/* V18 - FAVORIS */
+.favorite-btn{width:100%;background:#f4eee5;color:#76521c;margin-top:8px}.favorite-btn.is-favorite{background:#fbe9e8;color:#a52b2b}.favorites-empty{padding:18px;background:#f7f9f6;border:1px dashed #cbd8cc;border-radius:12px;color:var(--muted)}
+/* V17 - ANNUAIRE PROFESSIONNEL (base annonces publiques) */
+.directory-intro{margin:0 0 14px;color:var(--muted)}.directory-controls{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin:14px 0}.directory-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}.directory-card{background:#fff;border:1px solid #e3ebe3;border-radius:15px;padding:16px;box-shadow:0 5px 18px #153e2508}.directory-card h3{margin:0 0 7px;color:var(--green)}.directory-tag{display:inline-block;background:#edf5ed;color:#28623c;border-radius:999px;padding:5px 9px;font-size:.78rem;font-weight:700}.directory-card .market-actions{margin-top:12px}
+@media(max-width:650px){.directory-controls{grid-template-columns:1fr}}
+
+
+/* V19 - CENTRE DE SUIVI ET NOTIFICATIONS */
+.notification-card{border:1px solid #d8e6da;background:linear-gradient(180deg,#fbfdfb,#fff)}.notification-item{display:flex;gap:12px;align-items:flex-start;padding:13px 4px;border-bottom:1px solid #e8eee8}.notification-item:last-child{border-bottom:0}.notification-icon{width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:#edf5ee;display:grid;place-items:center;font-size:1.15rem}.notification-item strong{display:block;color:var(--green);margin-bottom:3px}.notification-item p{margin:0;color:var(--muted);font-size:.9rem;line-height:1.45}.notification-date{font-size:.78rem;color:#7b887e;margin-top:4px}
+
+
+/* V22 — annuaire professionnel autonome */
+.directory-form{background:#f7faf7;border:1px solid #dce8dd;border-radius:14px;padding:16px;margin:18px 0}
+.directory-form h3{margin:0 0 8px;color:var(--green)}
+.directory-card .directory-description{white-space:pre-wrap;line-height:1.5}
+.directory-admin-item{background:#fff;border:1px solid #dce8dd;border-radius:12px;padding:14px;margin:12px 0}
+.directory-admin-actions{display:flex;gap:8px;flex-wrap:wrap}
+.directory-status{font-size:.82rem;font-weight:700}
+
+
+/* V23 — DEMANDES DE SERVICES */
+.service-controls{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin:14px 0}.service-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.service-card{background:#fff;border:1px solid #dfe9df;border-radius:14px;padding:17px}.service-card h3{color:var(--green);margin:8px 0}.service-badge{display:inline-block;padding:5px 9px;border-radius:30px;background:#edf4ed;color:#245d38;font-size:.8rem;font-weight:700}.service-form{background:#f7faf7;border:1px solid #dce8dd;border-radius:14px;padding:17px;margin:15px 0}.service-admin{border:1px solid #dce8dd;background:#fff;border-radius:12px;padding:14px;margin:12px 0}.service-actions{display:flex;gap:8px;flex-wrap:wrap}.service-actions button{margin-top:6px}@media(max-width:650px){.service-controls{grid-template-columns:1fr}}
+
+/* V24 — messagerie privée entre membres */
+.message-layout{display:grid;grid-template-columns:minmax(220px, .8fr) minmax(280px,1.5fr);gap:16px}
+.conversation-list{border:1px solid #dce8dd;border-radius:12px;overflow:hidden}
+.conversation-item{display:block;width:100%;text-align:left;margin:0;border-radius:0;background:#fff;color:var(--ink);border-bottom:1px solid #e7eee8;box-shadow:none}
+.conversation-item.active{background:#eaf3eb;color:var(--green)}
+.conversation-item small{display:block;color:var(--muted);font-weight:400;margin-top:4px}
+.chat-panel{border:1px solid #dce8dd;border-radius:12px;padding:14px;min-height:360px;display:flex;flex-direction:column}
+.chat-messages{flex:1;max-height:420px;overflow:auto;padding:8px;background:#f7faf7;border-radius:10px}
+.chat-bubble{max-width:82%;padding:10px 13px;border-radius:13px;margin:9px 0;background:#fff;border:1px solid #e1e9e2;white-space:pre-wrap;overflow-wrap:anywhere}
+.chat-bubble.mine{margin-left:auto;background:#e4f1e6;border-color:#cce1d0}
+.chat-time{display:block;font-size:.72rem;color:var(--muted);margin-top:5px}
+.chat-compose{display:flex;gap:8px;align-items:flex-end;margin-top:12px}
+.chat-compose textarea{min-height:55px;max-height:130px;flex:1}
+.chat-compose button{margin:0}
+@media(max-width:700px){.message-layout{grid-template-columns:1fr}.chat-panel{min-height:300px}.conversation-list{max-height:220px;overflow:auto}}
+
+
+/* V24.1 — correction responsive mobile */
+html, body { width:100%; max-width:100%; min-width:0; overflow-x:hidden; }
+*, *::before, *::after { box-sizing:border-box; }
+img, video, iframe { max-width:100%; }
+input, select, textarea, button { max-width:100%; min-width:0; }
+@media (max-width: 760px) {
+  header { display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:16px; }
+  main { width:100%; margin:16px auto; padding:0 10px; }
+  .hero { min-height:0; display:block; padding:20px 16px; border-radius:16px; }
+  .hero-symbol { display:none; }
+  .hero h1 { font-size:1.65rem; overflow-wrap:anywhere; }
+  .hero p { font-size:.95rem; }
+  .hero-actions { display:grid; grid-template-columns:1fr; gap:8px; }
+  .hero-link { display:block; width:100%; text-align:center; }
+  .grid, .market-grid, .directory-grid, .service-grid {
+    grid-template-columns:minmax(0,1fr) !important;
+  }
+  .card { padding:15px; margin-bottom:14px; }
+  .market-head { display:flex; flex-direction:column; align-items:stretch; gap:8px; }
+  .market-head > button { width:100%; margin-top:0; }
+  .market-controls, .directory-controls, .service-controls {
+    grid-template-columns:minmax(0,1fr) !important;
+  }
+  .market-actions { display:grid; grid-template-columns:1fr; }
+  .market-actions a, .market-actions button { width:100%; text-align:center; }
+  .admin-top { align-items:stretch; flex-direction:column; }
+  .admin-top button { width:100%; }
+  .message-layout { grid-template-columns:minmax(0,1fr) !important; }
+  .conversation-list { max-height:190px; overflow-y:auto; }
+  .chat-panel { min-width:0; padding:10px; min-height:280px; }
+  .chat-messages { max-height:45vh; min-width:0; overflow-wrap:anywhere; }
+  .chat-bubble { max-width:95%; overflow-wrap:anywhere; }
+  .chat-compose { display:flex; flex-direction:column; align-items:stretch; }
+  .chat-compose textarea, .chat-compose button { width:100%; }
+  .chat-compose button { margin-top:4px; }
+  .modal-overlay { padding:8px; }
+  .detail-modal { width:100%; max-width:100%; padding:12px; }
+  .detail-gallery { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .sessionbar button { width:100%; }
+  table { display:block; max-width:100%; overflow-x:auto; }
+}
+@media (max-width:380px) {
+  main { padding:0 8px; }
+  .card { padding:12px; }
+  button { padding:11px 12px; font-size:.94rem; }
+  .hero h1 { font-size:1.45rem; }
+}
+
+</style>
+</head>
+<body>
+<header>
+  <!-- LOGO DU SITE : remplacer plus tard par le logo officiel -->
+  <div><div class="brand">🐑 RIM AgroOvin Connect</div><div class="tagline">Élever aujourd’hui, nourrir demain</div></div>
+  <span>V23 · Marketplace, annuaire & demandes de services</span>
+</header>
+<main>
+  <!-- IMAGE PRINCIPALE - ACCUEIL : ajouter une image de couverture ultérieurement -->
+  <section class="hero"><div class="hero-copy"><span class="hero-kicker">LE MARCHÉ AGROPASTORAL, EN UN SEUL ESPACE</span><h1>Connectons les acteurs<br>du monde agropastoral.</h1><p>Découvrez des annonces, trouvez des produits et rapprochez-vous des éleveurs, agriculteurs et fournisseurs partout en Mauritanie.</p><div class="hero-actions"><a class="hero-link primary" href="#marketplacePublic">Explorer les annonces</a><a class="hero-link outline" href="#authCards">Rejoindre la plateforme</a></div></div><div class="hero-symbol" aria-hidden="true">🐑<span>🌿</span></div></section>
+
+  <section id="marketplacePublic" class="card">
+    <div class="market-head"><div><h2 style="margin-bottom:5px">Marketplace</h2><p class="small">Découvrez les annonces agropastorales disponibles en Mauritanie.</p></div><button class="secondary" id="refreshMarketBtn">Actualiser</button></div>
+    <div class="market-controls">
+      <input id="marketSearch" type="search" placeholder="Rechercher une annonce..." aria-label="Rechercher une annonce">
+      <select id="marketCategory"><option value="">Toutes les catégories</option><option>Ovins</option><option>Aliments &amp; Fourrage</option><option>Légumes &amp; Fruits</option><option>Produits agricoles</option><option>Matériel &amp; Intrants</option></select>
+      <input id="marketCity" type="search" placeholder="Ville / localité" aria-label="Filtrer par ville">
+    </div>
+    <div id="marketListings"><p class="small">Chargement des annonces...</p></div>
+    <div id="marketStatus" class="status"></div>
+  </section>
+
+  <section id="myFavorites" class="card"><div class="market-head"><div><h2 style="margin-bottom:5px">❤️ Mes favoris</h2><p class="small">Retrouvez les annonces enregistrées pour les consulter plus tard. Les favoris sont conservés sur cet appareil.</p></div><button class="secondary" id="showAllFavoritesBtn">Voir toutes les annonces</button></div><div id="favoriteListings"><p class="favorites-empty">Aucune annonce enregistrée pour le moment.</p></div></section>
+
+  <section id="professionalDirectory" class="card">
+    <div class="market-head"><div><h2 style="margin-bottom:5px">Annuaire agropastoral</h2><p class="small">Retrouvez les vendeurs et acteurs actuellement présents sur RIM AgroOvin Connect.</p></div><button class="secondary" id="refreshDirectoryBtn">Actualiser</button></div>
+    <p class="directory-intro">Un répertoire indépendant des annonces : trouvez des éleveurs, vétérinaires, fournisseurs, agriculteurs et prestataires de services en Mauritanie.</p>
+    <div class="directory-form">
+      <h3>Inscrire mon activité professionnelle</h3>
+      <p class="small">La demande est réservée aux membres connectés. Votre fiche sera publiée après vérification par l’équipe RIM AgroOvin.</p>
+      <div id="directoryLoginHint" class="notice">Connectez-vous à votre compte pour soumettre une fiche professionnelle.</div>
+      <form id="professionalForm" class="hidden">
+        <label>Nom complet / Nom de l’établissement</label><input id="proFullName" maxlength="120" required>
+        <label>Profession / Type d’activité</label>
+        <select id="proType" required>
+          <option value="">Choisir une activité</option><option>Éleveur</option><option>Vétérinaire</option><option>Fournisseur d’aliments & fourrage</option><option>Agriculteur</option><option>Prestataire de services</option><option>Commerçant de bétail</option><option>Technicien agricole</option><option>Autre professionnel</option>
+        </select>
+        <label>Description de l’activité</label><textarea id="proDescription" maxlength="1200" placeholder="Présentez vos services, produits ou spécialités..."></textarea>
+        <div class="grid"><div><label>Téléphone</label><input id="proPhone" type="tel" maxlength="30" required></div><div><label>WhatsApp (facultatif)</label><input id="proWhatsapp" type="tel" maxlength="30"></div></div>
+        <div class="grid"><div><label>Ville / Localité</label><input id="proCity" maxlength="100" required></div><div><label>Adresse / Zone d’intervention</label><input id="proAddress" maxlength="180"></div></div>
+        <button type="submit">Soumettre ma fiche</button>
+      </form>
+      <div id="professionalFormStatus" class="status"></div>
+    </div>
+    <div class="directory-controls"><input id="directorySearch" type="search" placeholder="Rechercher un nom, métier ou service"><select id="directoryCategory"><option value="">Toutes les activités</option><option>Éleveur</option><option>Vétérinaire</option><option>Fournisseur d’aliments & fourrage</option><option>Agriculteur</option><option>Prestataire de services</option><option>Commerçant de bétail</option><option>Technicien agricole</option><option>Autre professionnel</option></select><input id="directoryCity" type="search" placeholder="Ville / localité"></div>
+    <div id="directoryCards"><p class="small">Chargement de l’annuaire...</p></div><div id="directoryStatus" class="status"></div>
+  </section>
+
+  <section class="card" id="serviceRequests">
+    <div class="market-head"><div><h2 style="margin-bottom:5px">Demandes de services & prestations</h2><p class="small">Trouvez une aide professionnelle ou publiez un besoin pour votre élevage ou votre activité agricole.</p></div><button class="secondary" id="refreshServicesBtn">Actualiser</button></div>
+    <div class="service-form"><h3 style="color:var(--green);margin-top:0">Publier une demande</h3><p class="small">Connectez-vous pour décrire votre besoin. Votre demande sera visible par les professionnels et membres autorisés de la plateforme.</p>
+      <div id="serviceLoginHint" class="notice">La publication est réservée aux membres connectés.</div>
+      <form id="serviceRequestForm" class="hidden">
+        <label>Type de service recherché</label><select id="serviceCategory" required><option value="">Choisir un service</option><option>Soins vétérinaires</option><option>Vaccination / déparasitage</option><option>Alimentation animale</option><option>Transport d’animaux</option><option>Achat / vente de bétail</option><option>Construction / aménagement d’enclos</option><option>Conseil technique en élevage</option><option>Matériel et équipements</option><option>Travaux agricoles</option><option>Autre prestation</option></select>
+        <label>Titre de la demande</label><input id="serviceTitle" maxlength="140" required placeholder="Ex. Besoin de vaccination pour 25 ovins">
+        <label>Description du besoin</label><textarea id="serviceDescription" maxlength="1500" required placeholder="Précisez le besoin, la quantité, les délais et les détails utiles..."></textarea>
+        <div class="grid"><div><label>Ville / Localité</label><input id="serviceCity" maxlength="100" required></div><div><label>Budget estimatif (MRU, facultatif)</label><input id="serviceBudget" type="number" min="0" step="1"></div></div>
+        <label>Téléphone de contact</label><input id="servicePhone" type="tel" maxlength="30" required>
+        <button type="submit">Publier ma demande</button>
+      </form><div id="serviceFormStatus" class="status"></div>
+    </div>
+    <h3>Demandes disponibles</h3><p class="small">Les demandes ouvertes sont consultables par les membres connectés.</p>
+    <div class="service-controls"><input id="serviceSearch" type="search" placeholder="Rechercher un service ou un besoin"><select id="serviceFilter"><option value="">Tous les services</option><option>Soins vétérinaires</option><option>Vaccination / déparasitage</option><option>Alimentation animale</option><option>Transport d’animaux</option><option>Conseil technique en élevage</option><option>Travaux agricoles</option><option>Autre prestation</option></select></div>
+    <div id="serviceRequestList"><p class="small">Connectez-vous pour consulter les demandes.</p></div><div id="serviceListStatus" class="status"></div>
+    <h3 style="margin-top:25px">Mes demandes</h3><div id="myServiceRequests"><p class="small">Connectez-vous pour suivre vos demandes.</p></div>
+  </section>
+
+
+  <section class="card hidden" id="messagingSection">
+    <div class="market-head"><div><h2 style="margin-bottom:5px">💬 Messagerie</h2><p class="small">Échangez directement avec les membres au sujet d'une demande ou d'une prestation.</p></div><button type="button" class="secondary" id="refreshMessagesBtn">Actualiser</button></div>
+    <div class="message-layout">
+      <div><h3>Mes conversations</h3><div id="conversationList" class="conversation-list"><p class="small" style="padding:12px">Chargement...</p></div><div id="messageStatus" class="status"></div></div>
+      <div class="chat-panel"><div id="chatHeading"><strong>Sélectionnez une conversation</strong><p class="small">Vos échanges privés apparaîtront ici.</p></div><div id="chatMessages" class="chat-messages"><p class="small">Aucune conversation sélectionnée.</p></div>
+        <form id="messageForm" class="chat-compose hidden"><textarea id="messageBody" maxlength="2000" required placeholder="Écrire un message..."></textarea><button type="submit">Envoyer</button></form>
+      </div>
+    </div>
+    <p class="small">Les messages sont privés entre les deux participants. N'envoyez pas de mot de passe ni d'informations sensibles.</p>
+  </section>
+
+  <section class="card hidden" id="recoveryPanel"><h2>Créer un nouveau mot de passe</h2><p class="small">Après avoir ouvert le lien reçu par email, choisis un nouveau mot de passe.</p><form id="recoveryPasswordForm"><label>Nouveau mot de passe</label><input id="recoveryPassword" type="password" minlength="8" required autocomplete="new-password"><label>Confirmer le mot de passe</label><input id="recoveryPasswordConfirm" type="password" minlength="8" required autocomplete="new-password"><button type="submit">Enregistrer le nouveau mot de passe</button></form><div id="recoveryPasswordStatus" class="status"></div></section>
+
+  <div class="sessionbar" id="sessionBar">Session ouverte : <strong id="sessionEmail"></strong> <button class="secondary" id="logoutBtn">Se déconnecter</button></div>
+
+  <section class="grid" id="authCards">
+    <div class="card"><h2>Créer un compte</h2><p class="small">Inscris-toi pour publier tes annonces.</p>
+      <form id="signupForm">
+        <label>Nom complet</label><input id="signupName" required autocomplete="name">
+        <label>Téléphone</label><input id="signupPhone" autocomplete="tel">
+        <label>Ville</label><input id="signupCity" placeholder="Ex. Sélibabi">
+        <label>Type de compte</label><select id="signupRole" required><option value="">Choisir ton profil</option><option value="Acheteur">Acheteur</option><option value="Éleveur">Éleveur</option><option value="Fournisseur">Fournisseur</option><option value="Agriculteur">Agriculteur</option><option value="Vétérinaire">Vétérinaire</option><option value="Prestataire de services">Prestataire de services</option></select>
+        <label>Email</label><input id="signupEmail" type="email" required autocomplete="email">
+        <label>Mot de passe</label><input id="signupPassword" type="password" required minlength="6" autocomplete="new-password">
+        <button class="wide" type="submit">Créer mon compte</button>
+      </form><div id="signupStatus" class="status"></div>
+    </div>
+    <div class="card"><h2>Connexion</h2><p class="small">Tu as déjà un compte ? Connecte-toi.</p>
+      <form id="loginForm">
+        <label>Email</label><input id="loginEmail" type="email" required autocomplete="email">
+        <label>Mot de passe</label><input id="loginPassword" type="password" required autocomplete="current-password">
+        <button class="wide" type="submit">Se connecter</button>
+      </form><div id="loginStatus" class="status"></div>
+      <details style="margin-top:12px"><summary style="cursor:pointer;color:var(--green);font-weight:600">Mot de passe oublié ?</summary>
+        <form id="resetRequestForm" style="margin-top:10px"><label>Adresse email du compte</label><input id="resetEmail" type="email" required autocomplete="email"><button type="submit" class="secondary">Recevoir un lien de réinitialisation</button></form><div id="resetRequestStatus" class="status"></div>
+      </details>
+    </div>
+  </section>
+
+  <section class="card hidden" id="memberArea"><h2>Mon espace membre</h2><p class="small">Tes annonces seront soumises à validation avant leur affichage public.</p>
+  <div class="card" style="margin:12px 0"><h3 style="color:var(--green);margin-top:0">Sécurité du compte</h3><p class="small">Change ton mot de passe depuis une session ouverte.</p><form id="changePasswordForm"><label>Nouveau mot de passe</label><input id="newPassword" type="password" minlength="8" required autocomplete="new-password"><label>Confirmer le nouveau mot de passe</label><input id="confirmPassword" type="password" minlength="8" required autocomplete="new-password"><button type="submit">Mettre à jour le mot de passe</button></form><div id="changePasswordStatus" class="status"></div><p class="small">Ton adresse de connexion actuelle : <strong id="accountEmailLabel"></strong></p></div>
+  <div class="notice">Photos : JPG, PNG ou WebP, 2 Mo maximum par photo.</div>
+  <div class="card notification-card" style="margin-top:16px;margin-bottom:0"><div class="market-head"><div><h3 style="color:var(--green);margin:0">🔔 Mes notifications & suivi</h3><p class="small">Retrouve ici l’état de tes annonces et les informations importantes liées à tes publications.</p></div><button type="button" class="secondary" id="refreshNotificationsBtn">Actualiser</button></div><div id="notificationSummary" class="notice">Chargement du suivi…</div><div id="notificationList"><p class="small">Les informations apparaîtront après le chargement de tes annonces.</p></div><p class="small">Ces alertes sont générées à partir des statuts actuellement enregistrés dans Supabase. Il ne s’agit pas encore de notifications push ou d’alertes instantanées.</p></div>
+  <div class="card" style="margin-top:16px;margin-bottom:0"><h3 style="color:var(--green);margin-top:0">Mon profil vendeur</h3><p class="small">Maintiens tes coordonnées et ton type d’activité à jour pour faciliter les échanges. Le type de compte décrit ton activité ; il ne donne aucun droit d’administration.</p><form id="profileForm"><label>Nom complet</label><input id="profileName" required maxlength="100"><label>Téléphone</label><input id="profilePhone" type="tel" maxlength="30"><label>Ville / Localité</label><input id="profileCity" maxlength="100"><label>Type de compte</label><select id="profileRole"><option value="Acheteur">Acheteur</option><option value="Éleveur">Éleveur</option><option value="Fournisseur">Fournisseur</option><option value="Agriculteur">Agriculteur</option><option value="Vétérinaire">Vétérinaire</option><option value="Prestataire de services">Prestataire de services</option></select><button type="submit">Enregistrer mon profil</button></form><div id="profileStatus" class="status"></div></div></section>
+
+  <section class="card hidden" id="publishCard"><h2>Publier une annonce</h2>
+    <form id="listingForm">
+      <label>Catégorie</label><select id="listingCategory" required>
+        <option value="">Choisir une catégorie</option>
+        <option>Ovins</option><option>Aliments &amp; Fourrage</option><option>Légumes &amp; Fruits</option><option>Produits agricoles</option><option>Matériel &amp; Intrants</option>
+      </select>
+      <label>Titre</label><input id="listingTitle" maxlength="120" required placeholder="Ex. Bélier mauritanien à vendre">
+      <label>Description</label><textarea id="listingDescription" placeholder="Caractéristiques, quantité, état du produit..."></textarea>
+      <div class="grid"><div><label>Prix (MRU)</label><input id="listingPrice" type="number" min="0" step="1" required></div><div><label>Ville / Localité</label><input id="listingCity" required placeholder="Ex. Sélibabi"></div></div>
+      <label>Téléphone de contact</label><input id="listingPhone" type="tel">
+      <label>Photos (facultatif)</label><input id="listingPhotos" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+      <p class="small">Les photos seront stockées dans le bucket public animal-photos.</p>
+      <button class="wide" id="publishBtn" type="submit">Publier mon annonce</button>
+    </form><div id="listingStatus" class="status"></div>
+  </section>
+
+  <section class="card hidden" id="myListingsCard"><h2>Mon espace vendeur</h2><p class="small">Suivez vos publications, modifiez-les et gérez leur disponibilité.</p><div id="sellerSummary" class="grid"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="secondary seller-filter" data-filter="all">Toutes</button><button class="secondary seller-filter" data-filter="pending">En attente</button><button class="secondary seller-filter" data-filter="approved">Approuvées</button><button class="secondary seller-filter" data-filter="rejected">Rejetées</button><button class="secondary seller-filter" data-filter="sold">Vendues</button></div><button class="secondary" id="refreshListingsBtn">Actualiser</button><div id="myListings"><p class="small">Chargement...</p></div><div id="sellerStatus" class="status"></div></section>  <section class="card admin-panel hidden" id="adminPanel">
+    <div class="admin-top"><div><h2>Administration RIM AgroOvin Connect</h2><p class="small">Espace réservé aux membres autorisés de l’équipe.</p></div><button class="secondary" id="refreshAdminBtn">Actualiser</button></div>
+    <div class="grid" id="adminStats"></div>
+    <h3>Annonces à modérer</h3><div id="pendingListings"><p class="small">Chargement...</p></div>
+    <hr style="border:0;border-top:1px solid #dce8dd;margin:24px 0">
+    <h3>Demandes d’inscription à l’annuaire professionnel</h3>
+    <p class="small">Les fiches en attente peuvent être approuvées ou rejetées par un administrateur autorisé.</p>
+    <div id="pendingProfessionals"><p class="small">Chargement...</p></div>
+    <div id="directoryAdminStatus" class="status"></div>
+    <hr style="border:0;border-top:1px solid #dce8dd;margin:24px 0"><h3>Demandes de services à suivre</h3><div id="adminServiceRequests"><p class="small">Chargement...</p></div><div id="adminServiceStatus" class="status"></div>
+    <div id="adminStatus" class="status"></div>
+  </section>
+</main>
+<footer>RIM AgroOvin Connect · V24 — Messagerie et échanges</footer>
+<script>
+// =====================================
+// CONFIGURATION SUPABASE - RIM AGROOVIN
+// =====================================
+const SUPABASE_URL="https://yxvfmigqkcbiodtgjooi.supabase.co";
+// Clé publiable uniquement : ne jamais mettre sb_secret ou service_role dans le navigateur.
+const SUPABASE_KEY="sb_publishable_Xp3rhQbII8gAXxVaJPuRKg_bPEJBnCm";
+const PHOTO_BUCKET="animal-photos";
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+function status(id,msg,ok=false){const el=$(id);el.textContent=msg;el.className="status "+(ok?"ok":"err")}
+function clearStatus(id){$(id).textContent="";$(id).className="status"}
+function busy(form,value){form.querySelectorAll("button").forEach(b=>b.disabled=value)}
+function esc(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+async function saveProfile(user,values={}){
+ const p={id:user.id,full_name:values.full_name??user.user_metadata?.full_name??"",phone:values.phone??user.user_metadata?.phone??"",city:values.city??user.user_metadata?.city??"",role:values.role??user.user_metadata?.role??"Acheteur"};
+ const {error}=await supabaseClient.from("profiles").upsert(p,{onConflict:"id"});if(error)throw error;return p;
+}
+function signedIn(user){
+ if($("accountEmailLabel")) $("accountEmailLabel").textContent=user.email||"Non renseigné";
+ window.__rimCurrentUserId=user.id;
+ $("sessionBar").style.display="block";$("sessionEmail").textContent=user.email||"Utilisateur";
+ $("authCards").classList.add("hidden");["memberArea","publishCard","myListingsCard","messagingSection"].forEach(id=>$(id).classList.remove("hidden"));
+ if(!$("listingPhone").value)$("listingPhone").value=user.user_metadata?.phone||"";
+ if(!$("listingCity").value)$("listingCity").value=user.user_metadata?.city||"";
+ loadMyListings();
+ loadConversations();
+ updateProfessionalFormVisibility(user);updateServiceFormVisibility(user);loadServiceRequests();loadMyServiceRequests();loadProfile(user);
+ setupAdmin(user);
+}
+function signedOut(){
+ window.__rimCurrentUserId=null;
+ $("sessionBar").style.display="none";$("authCards").classList.remove("hidden");
+ ["memberArea","publishCard","myListingsCard","adminPanel","messagingSection"].forEach(id=>$(id).classList.add("hidden"));
+ updateProfessionalFormVisibility(null);updateServiceFormVisibility(null);$("serviceRequestList").innerHTML="<p class=\"small\">Connectez-vous pour consulter les demandes.</p>";$("myServiceRequests").innerHTML="<p class=\"small\">Connectez-vous pour suivre vos demandes.</p>";
+}
+async function loadProfile(user){
+ const {data,error}=await supabaseClient.from('profiles').select('full_name,phone,city,role').eq('id',user.id).maybeSingle();
+ if(error){status('profileStatus','Impossible de charger le profil : '+error.message);return;}
+ $('profileName').value=data?.full_name||user.user_metadata?.full_name||'';
+ $('profilePhone').value=data?.phone||user.user_metadata?.phone||'';
+ $('profileCity').value=data?.city||user.user_metadata?.city||'';
+ $('profileRole').value=data?.role||user.user_metadata?.role||'Acheteur';
+}
+$('profileForm').addEventListener('submit',async e=>{
+ e.preventDefault();const {data:{user}}=await supabaseClient.auth.getUser();if(!user){status('profileStatus','Connecte-toi pour modifier ton profil.');return;}
+ const values={full_name:$('profileName').value.trim(),phone:$('profilePhone').value.trim(),city:$('profileCity').value.trim(),role:$('profileRole').value};
+ try{await saveProfile(user,values);await supabaseClient.auth.updateUser({data:values});status('profileStatus','Profil mis à jour avec succès.',true);}
+ catch(err){status('profileStatus','Enregistrement impossible : '+err.message);}
+});
+async function refreshSession(){const {data:{session}}=await supabaseClient.auth.getSession();if(session)signedIn(session.user);else signedOut()}
+
+// V23 — DEMANDES DE SERVICES ET PRESTATIONS
+function updateServiceFormVisibility(user){
+ const form=$('serviceRequestForm'),hint=$('serviceLoginHint');if(!form||!hint)return;
+ if(user){form.classList.remove('hidden');hint.classList.add('hidden');if(!$('servicePhone').value)$('servicePhone').value=user.user_metadata?.phone||'';if(!$('serviceCity').value)$('serviceCity').value=user.user_metadata?.city||'';}
+ else{form.classList.add('hidden');hint.classList.remove('hidden');}
+}
+function serviceStatusLabel(v){return v==='open'?'Ouverte':v==='in_progress'?'En cours':v==='completed'?'Terminée':v==='cancelled'?'Annulée':v;}
+function renderServiceRequests(rows){
+ const box=$('serviceRequestList');const q=$('serviceSearch').value.trim().toLowerCase(),cat=$('serviceFilter').value;
+ const data=(rows||[]).filter(r=>(!q||[r.title,r.description,r.city,r.category].some(x=>String(x||'').toLowerCase().includes(q)))&&(!cat||r.category===cat));
+ if(!data.length){box.innerHTML='<p class="small">Aucune demande ouverte ne correspond à votre recherche.</p>';return;}
+ box.innerHTML='<div class="service-grid">'+data.map(r=>'<article class="service-card"><span class="service-badge">'+esc(r.category)+'</span><h3>'+esc(r.title)+'</h3><p>'+esc(r.description)+'</p><p class="small">📍 '+esc(r.city)+' · '+(r.budget_mru?('Budget indicatif : '+Number(r.budget_mru).toLocaleString('fr-FR')+' MRU · '):'')+'Publié le '+new Date(r.created_at).toLocaleDateString('fr-FR')+'</p><p class="small">Contact : '+esc(r.phone_contact||'Non renseigné')+'</p><span class="service-badge">'+serviceStatusLabel(r.status)+'</span>'+(r.user_id!==window.__rimCurrentUserId?'<button type="button" class="secondary" onclick="startConversation(\''+r.user_id+'\',\''+esc(r.title).replace(/\\/g,'')+'\')">💬 Contacter par message</button>':'')+'</article>').join('')+'</div>';
+}
+let serviceRequestCache=[];
+async function loadServiceRequests(){
+ const box=$('serviceRequestList');const {data:{user}}=await supabaseClient.auth.getUser();
+ if(!user){box.innerHTML='<p class="small">Connectez-vous pour consulter les demandes.</p>';return;}
+ box.innerHTML='<p class="small">Chargement des demandes...</p>';
+ const {data,error}=await supabaseClient.from('service_requests').select('id,user_id,category,title,description,city,budget_mru,phone_contact,status,created_at').in('status',['open','in_progress']).order('created_at',{ascending:false});
+ if(error){box.innerHTML='<p class="small">Impossible de charger les demandes : '+esc(error.message)+'<br>Vérifiez que la table service_requests et ses politiques SQL sont installées.</p>';return;}
+ serviceRequestCache=data||[];renderServiceRequests(serviceRequestCache);
+}
+async function loadMyServiceRequests(){
+ const box=$('myServiceRequests');const {data:{user}}=await supabaseClient.auth.getUser();if(!user){box.innerHTML='<p class="small">Connectez-vous pour suivre vos demandes.</p>';return;}
+ const {data,error}=await supabaseClient.from('service_requests').select('id,category,title,city,status,created_at').eq('user_id',user.id).order('created_at',{ascending:false});
+ if(error){box.innerHTML='<p class="small">Chargement impossible : '+esc(error.message)+'</p>';return;}
+ if(!data?.length){box.innerHTML='<p class="small">Vous n’avez pas encore publié de demande.</p>';return;}
+ box.innerHTML=data.map(r=>'<article class="service-admin"><div class="admin-top"><strong>'+esc(r.title)+'</strong><span class="service-badge">'+serviceStatusLabel(r.status)+'</span></div><p class="small">'+esc(r.category)+' · '+esc(r.city)+' · '+new Date(r.created_at).toLocaleDateString('fr-FR')+'</p>'+(r.status==='open'?'<button class="btn-danger" onclick="cancelServiceRequest(\''+r.id+'\')">Annuler ma demande</button>':'')+'</article>').join('');
+}
+$('serviceRequestForm').addEventListener('submit',async e=>{
+ e.preventDefault();const form=e.currentTarget;busy(form,true);clearStatus('serviceFormStatus');
+ try{const {data:{user}}=await supabaseClient.auth.getUser();if(!user)throw new Error('Connectez-vous pour publier une demande.');
+ const row={user_id:user.id,category:$('serviceCategory').value,title:$('serviceTitle').value.trim(),description:$('serviceDescription').value.trim(),city:$('serviceCity').value.trim(),budget_mru:$('serviceBudget').value?Number($('serviceBudget').value):null,phone_contact:$('servicePhone').value.trim(),status:'open'};
+ if(!row.category||!row.title||!row.description||!row.city||!row.phone_contact)throw new Error('Veuillez remplir tous les champs obligatoires.');
+ const {error}=await supabaseClient.from('service_requests').insert(row);if(error)throw error;form.reset();updateServiceFormVisibility(user);status('serviceFormStatus','Votre demande a été publiée avec succès.',true);await loadServiceRequests();await loadMyServiceRequests();
+ }catch(err){status('serviceFormStatus','Publication impossible : '+(err.message||'Erreur inconnue'));}finally{busy(form,false);}
+});
+async function cancelServiceRequest(id){if(!confirm('Annuler cette demande ?'))return;const {data:{user}}=await supabaseClient.auth.getUser();if(!user)return;const {error}=await supabaseClient.from('service_requests').update({status:'cancelled'}).eq('id',id).eq('user_id',user.id);if(error){status('serviceFormStatus','Annulation impossible : '+error.message);return;}await loadMyServiceRequests();await loadServiceRequests();}
+$('refreshServicesBtn').addEventListener('click',()=>{loadServiceRequests();loadMyServiceRequests();});
+['serviceSearch','serviceFilter'].forEach(id=>$(id).addEventListener('input',()=>renderServiceRequests(serviceRequestCache)));
+
+
+// =====================================
+// V24.1 — MESSAGERIE PRIVÉE ET CORRECTIONS MOBILE
+// Tables: conversations, messages
+// =====================================
+let activeConversationId=null;
+let conversationCache=[];
+function orderedParticipants(a,b){return [a,b].sort((x,y)=>x.localeCompare(y));}
+async function loadConversations(){
+ const {data:{user}}=await supabaseClient.auth.getUser();const box=$('conversationList');
+ if(!user){box.innerHTML='<p class="small" style="padding:12px">Connectez-vous pour voir vos conversations.</p>';return;}
+ box.innerHTML='<p class="small" style="padding:12px">Chargement...</p>';
+ const {data,error}=await supabaseClient.from('conversations').select('id,participant_1,participant_2,subject,updated_at').order('updated_at',{ascending:false});
+ if(error){box.innerHTML='<p class="small" style="padding:12px">Chargement impossible : '+esc(error.message)+'. Vérifiez le SQL V24.</p>';return;}
+ conversationCache=data||[];
+ if(!conversationCache.length){box.innerHTML='<p class="small" style="padding:12px">Aucune conversation. Vous pourrez en démarrer une depuis une demande de service.</p>';return;}
+ box.innerHTML=conversationCache.map(c=>'<button type="button" class="conversation-item '+(c.id===activeConversationId?'active':'')+'" onclick="openConversation(\''+c.id+'\')">'+esc(c.subject||'Conversation')+'<small>'+new Date(c.updated_at).toLocaleString('fr-FR')+'</small></button>').join('');
+ if(activeConversationId && conversationCache.some(c=>c.id===activeConversationId)) await loadMessages(activeConversationId);
+}
+async function startConversation(recipientId,subject){
+ try{
+  const {data:{user}}=await supabaseClient.auth.getUser();if(!user)throw new Error('Connectez-vous pour envoyer un message.');
+  if(!recipientId||recipientId===user.id)throw new Error('Vous ne pouvez pas vous envoyer un message.');
+  const [p1,p2]=orderedParticipants(user.id,recipientId);
+  let {data,error}=await supabaseClient.from('conversations').select('id').eq('participant_1',p1).eq('participant_2',p2).maybeSingle();
+  if(error)throw error;
+  if(!data){const result=await supabaseClient.from('conversations').insert({participant_1:p1,participant_2:p2,subject:subject||'Échange entre membres'}).select('id').single();if(result.error)throw result.error;data=result.data;}
+  activeConversationId=data.id;await loadConversations();await loadMessages(activeConversationId);$('messageBody').focus();
+ }catch(e){status('messageStatus','Ouverture impossible : '+(e.message||'Erreur inconnue'));}
+}
+async function openConversation(id){activeConversationId=id;await loadConversations();}
+async function loadMessages(id){
+ const {data:{user}}=await supabaseClient.auth.getUser();if(!user)return;
+ const c=conversationCache.find(x=>x.id===id);$('chatHeading').innerHTML='<strong>'+esc(c?.subject||'Conversation')+'</strong><p class="small">Échange privé</p>';
+ $('messageForm').classList.remove('hidden');$('chatMessages').innerHTML='<p class="small">Chargement des messages...</p>';
+ const {data,error}=await supabaseClient.from('messages').select('id,sender_id,body,created_at').eq('conversation_id',id).order('created_at',{ascending:true}).limit(200);
+ if(error){$('chatMessages').innerHTML='<p class="small">Impossible de charger les messages : '+esc(error.message)+'</p>';return;}
+ if(!data?.length){$('chatMessages').innerHTML='<p class="small">Démarrez la conversation en envoyant votre premier message.</p>';return;}
+ $('chatMessages').innerHTML=data.map(m=>'<div class="chat-bubble '+(m.sender_id===user.id?'mine':'')+'">'+esc(m.body)+'<span class="chat-time">'+(m.sender_id===user.id?'Vous · ':'')+new Date(m.created_at).toLocaleString('fr-FR')+'</span></div>').join('');
+ $('chatMessages').scrollTop=$('chatMessages').scrollHeight;
+}
+$('messageForm').addEventListener('submit',async e=>{
+ e.preventDefault();const form=e.currentTarget;busy(form,true);
+ try{
+  const {data:{user}}=await supabaseClient.auth.getUser();if(!user||!activeConversationId)throw new Error('Sélectionnez une conversation.');
+  const body=$('messageBody').value.trim();if(!body)throw new Error('Le message est vide.');
+  const {error}=await supabaseClient.from('messages').insert({conversation_id:activeConversationId,sender_id:user.id,body});
+  if(error)throw error;$('messageBody').value='';await loadMessages(activeConversationId);
+ }catch(err){status('messageStatus','Envoi impossible : '+(err.message||'Erreur inconnue'));}finally{busy(form,false);}
+});
+$('refreshMessagesBtn').addEventListener('click',loadConversations);
+
+// MARKETPLACE PUBLIC : uniquement annonces approuvées et disponibles
+let marketData=[];
+const FAVORITES_KEY="rim_agroovin_favorites_v1";
+function getFavoriteIds(){try{return JSON.parse(localStorage.getItem(FAVORITES_KEY)||"[]").map(String)}catch(e){return []}}
+function isFavorite(id){return getFavoriteIds().includes(String(id))}
+function toggleFavorite(id){const ids=getFavoriteIds(),key=String(id),next=ids.includes(key)?ids.filter(x=>x!==key):[...ids,key];localStorage.setItem(FAVORITES_KEY,JSON.stringify(next));renderMarket();renderFavorites();if($("listingDetailModal")&&$("listingDetailModal").classList.contains("open"))openListingDetails(id)}
+function favoriteCard(a){const img=(a.photos||[])[0];return '<article class="market-card">'+(img?'<img loading="lazy" src="'+esc(img)+'" alt="'+esc(a.title)+'">':'<div style="height:190px;background:#e9efe9;display:grid;place-items:center;font-size:3rem">🐑</div>')+'<div class="market-body"><h3>'+esc(a.title)+'</h3><div class="market-meta">'+esc(a.category||'')+' · 📍 '+esc(a.city||'Localité non précisée')+'</div><div class="market-price">'+Number(a.price||0).toLocaleString('fr-FR')+' MRU</div><button class="detail-btn" onclick="openListingDetails(\''+a.id+'\')">Voir les détails</button><button class="favorite-btn is-favorite" onclick="toggleFavorite(\''+a.id+'\')">♥ Retirer des favoris</button></div></article>'}
+function renderFavorites(){const box=$("favoriteListings");if(!box)return;const ids=getFavoriteIds(),items=ids.map(id=>marketData.find(a=>String(a.id)===id)).filter(Boolean);if(!items.length){box.innerHTML='<p class="favorites-empty">'+(ids.length?'Certaines annonces sauvegardées ne sont plus disponibles.':'Vous n\'avez pas encore enregistré d\'annonce. Cliquez sur « Ajouter aux favoris » sur une annonce qui vous intéresse.')+'</p>';return;}box.innerHTML='<div class="market-grid">'+items.map(favoriteCard).join('')+'</div>'}
+
+function contactLinks(phone){
+ const digits=String(phone||'').replace(/[^0-9]/g,'');
+ if(!digits)return '<span class="small">Contact vendeur non renseigné</span>';
+ return '<div class="market-actions"><a target="_blank" rel="noopener" href="https://wa.me/'+digits+'">WhatsApp</a><a class="call" href="tel:'+digits+'">Appeler</a></div>';
+}
+function renderMarket(){
+ const search=$('marketSearch').value.trim().toLowerCase(),category=$('marketCategory').value,city=$('marketCity').value.trim().toLowerCase();
+ const filtered=marketData.filter(a=>(!search||[a.title,a.description,a.category,a.city].some(v=>String(v||'').toLowerCase().includes(search)))&&(!category||a.category===category)&&(!city||String(a.city||'').toLowerCase().includes(city)));
+ const box=$('marketListings');
+ if(!filtered.length){box.innerHTML='<p class="small">Aucune annonce ne correspond à votre recherche.</p>';return;}
+ box.innerHTML='<div class="market-grid">'+filtered.map(a=>{
+  const img=(a.photos||[])[0];
+  return '<article class="market-card">'+(img?'<img loading="lazy" src="'+esc(img)+'" alt="'+esc(a.title)+'">':'<div style="height:190px;background:#e9efe9;display:grid;place-items:center;font-size:3rem">🐑</div>')+'<div class="market-body"><h3>'+esc(a.title)+'</h3><div class="market-meta">'+esc(a.category||'')+' · 📍 '+esc(a.city||'Localité non précisée')+'</div><div class="market-price">'+Number(a.price||0).toLocaleString('fr-FR')+' MRU</div><p>'+esc((a.description||'').slice(0,150))+(String(a.description||'').length>150?'…':'')+'</p><button class="detail-btn" onclick="openListingDetails(\''+a.id+'\')">Voir les détails</button><button class="favorite-btn '+(isFavorite(a.id)?'is-favorite':'')+'" onclick="toggleFavorite(\''+a.id+'\')">'+(isFavorite(a.id)?'♥ Retirer des favoris':'♡ Ajouter aux favoris')+'</button>'+contactLinks(a.phone_contact)+'</div></article>';
+ }).join('')+'</div>';
+}
+
+let professionalDirectoryData=[];
+function renderDirectory(){
+ const search=$('directorySearch').value.trim().toLowerCase();
+ const category=$('directoryCategory').value;
+ const city=$('directoryCity').value.trim().toLowerCase();
+ const entries=professionalDirectoryData.filter(p=>
+  (!search||[p.full_name,p.professional_type,p.description,p.city,p.address].some(v=>String(v||'').toLowerCase().includes(search)))&&
+  (!category||p.professional_type===category)&&
+  (!city||String(p.city||'').toLowerCase().includes(city))
+ );
+ const box=$('directoryCards');
+ if(!entries.length){box.innerHTML='<p class="small">Aucun professionnel approuvé ne correspond à votre recherche.</p>';return;}
+ box.innerHTML='<div class="directory-grid">'+entries.map(p=>{
+  const phone=String(p.phone||'').replace(/[^0-9]/g,'');
+  const wa=String(p.whatsapp||p.phone||'').replace(/[^0-9]/g,'');
+  const actions=(phone||wa)?'<div class="market-actions">'+(wa?'<a target="_blank" rel="noopener" href="https://wa.me/'+esc(wa)+'">WhatsApp</a>':'')+(phone?'<a class="call" href="tel:'+esc(phone)+'">Appeler</a>':'')+'</div>':'<p class="small">Coordonnées non renseignées.</p>';
+  return '<article class="directory-card"><span class="directory-tag">'+esc(p.professional_type)+'</span><h3 style="margin-top:10px">'+esc(p.full_name)+'</h3><div class="market-meta">📍 '+esc(p.city||'Localité non précisée')+(p.address?' · '+esc(p.address):'')+'</div><p class="directory-description">'+esc(p.description||'Aucune description fournie.')+'</p>'+actions+'</article>';
+ }).join('')+'</div>';
+}
+async function loadProfessionalDirectory(){
+ const box=$('directoryCards');box.innerHTML='<p class="small">Chargement des professionnels...</p>';
+ const {data,error}=await supabaseClient.from('professional_directory')
+  .select('id,full_name,professional_type,description,phone,whatsapp,city,address,created_at')
+  .eq('status','approved').order('created_at',{ascending:false});
+ if(error){box.innerHTML='<p class="small">Impossible de charger l’annuaire : '+esc(error.message)+'</p>';return;}
+ professionalDirectoryData=data||[];renderDirectory();
+}
+function updateProfessionalFormVisibility(user){
+ const form=$('professionalForm'),hint=$('directoryLoginHint');
+ if(user){form.classList.remove('hidden');hint.classList.add('hidden');
+  $('proFullName').value=$('proFullName').value||user.user_metadata?.full_name||'';
+  $('proPhone').value=$('proPhone').value||user.user_metadata?.phone||'';
+  $('proCity').value=$('proCity').value||user.user_metadata?.city||'';
+ }else{form.classList.add('hidden');hint.classList.remove('hidden');}
+}
+$('professionalForm').addEventListener('submit',async e=>{
+ e.preventDefault();const form=e.currentTarget;busy(form,true);clearStatus('professionalFormStatus');
+ try{
+  const {data:{user},error:userError}=await supabaseClient.auth.getUser();
+  if(userError)throw userError;if(!user)throw new Error('Connectez-vous avant de soumettre votre fiche.');
+  const record={
+   user_id:user.id,full_name:$('proFullName').value.trim(),
+   professional_type:$('proType').value,description:$('proDescription').value.trim(),
+   phone:$('proPhone').value.trim(),whatsapp:$('proWhatsapp').value.trim(),
+   city:$('proCity').value.trim(),address:$('proAddress').value.trim(),
+   status:'pending'
+  };
+  if(!record.full_name||!record.professional_type||!record.phone||!record.city)throw new Error('Veuillez remplir les champs obligatoires.');
+  const {error}=await supabaseClient.from('professional_directory').insert(record);
+  if(error)throw error;
+  form.reset();updateProfessionalFormVisibility(user);
+  status('professionalFormStatus','Votre demande a été envoyée. Elle sera visible dans l’annuaire après approbation.',true);
+ }catch(err){status('professionalFormStatus','Soumission impossible : '+(err.message||'Erreur inconnue'))}
+ finally{busy(form,false)}
+});
+['directorySearch','directoryCategory','directoryCity'].forEach(id=>$(id).addEventListener('input',renderDirectory));
+$('refreshDirectoryBtn').addEventListener('click',loadProfessionalDirectory);
+
+async function loadMarketplace(){
+ const box=$('marketListings');box.innerHTML='<p class="small">Chargement des annonces...</p>';clearStatus('marketStatus');
+ const {data,error}=await supabaseClient.from('listings').select('id,title,category,description,price,city,phone_contact,photos,status,moderation_status,created_at,seller_id').eq('moderation_status','approved').eq('status','available').order('created_at',{ascending:false});
+ if(error){box.innerHTML='<p class="small">Impossible de charger les annonces : '+esc(error.message)+'</p>';return;}
+ marketData=data||[];renderMarket();renderFavorites();
+}
+['marketSearch','marketCategory','marketCity'].forEach(id=>$(id).addEventListener('input',renderMarket));$('refreshMarketBtn').addEventListener('click',loadMarketplace);
+$('showAllFavoritesBtn').addEventListener('click',()=>document.getElementById('marketplacePublic').scrollIntoView({behavior:'smooth'}));
+
+// INSCRIPTION ET CONNEXION
+$("signupForm").addEventListener("submit",async e=>{
+ e.preventDefault();const f=e.currentTarget;clearStatus("signupStatus");busy(f,true);
+ const full_name=$("signupName").value.trim(),phone=$("signupPhone").value.trim(),city=$("signupCity").value.trim(),role=$("signupRole").value,email=$("signupEmail").value.trim(),password=$("signupPassword").value;
+ try{
+  const {data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{full_name,phone,city,role}}});if(error)throw error;
+  if(data.session){await saveProfile(data.user,{full_name,phone,city,role});signedIn(data.user);status("signupStatus","Compte créé et profil enregistré.",true)}
+  else status("signupStatus","Inscription enregistrée. Vérifie ta boîte email pour confirmer ton adresse, puis connecte-toi.",true);
+ }catch(err){status("signupStatus",err.message||"Erreur d'inscription")}finally{busy(f,false)}
+});
+$("loginForm").addEventListener("submit",async e=>{
+ e.preventDefault();const f=e.currentTarget;clearStatus("loginStatus");busy(f,true);
+ try{const {data,error}=await supabaseClient.auth.signInWithPassword({email:$("loginEmail").value.trim(),password:$("loginPassword").value});if(error)throw error;
+  await saveProfile(data.user);signedIn(data.user);status("loginStatus","Connexion réussie.",true);
+ }catch(err){status("loginStatus",err.message||"Erreur de connexion")}finally{busy(f,false)}
+});
+// V20 — récupération et gestion sécurisée du mot de passe
+$("resetRequestForm").addEventListener("submit",async e=>{
+ e.preventDefault();const f=e.currentTarget;busy(f,true);clearStatus("resetRequestStatus");
+ try{
+  const email=$("resetEmail").value.trim();
+  const redirectTo=window.location.origin+window.location.pathname;
+  const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo});if(error)throw error;
+  status("resetRequestStatus","Si cette adresse correspond à un compte, un lien de réinitialisation sera envoyé. Vérifie aussi tes courriers indésirables.",true);
+ }catch(err){status("resetRequestStatus",err.message||"Envoi du lien impossible.") }finally{busy(f,false)}
+});
+async function updateAccountPassword(inputId,confirmId,statusId,formId){
+ const password=$(inputId).value,confirmation=$(confirmId).value;
+ if(password.length<8){status(statusId,"Le mot de passe doit contenir au moins 8 caractères.");return false;}
+ if(password!==confirmation){status(statusId,"Les deux mots de passe ne correspondent pas.");return false;}
+ const {error}=await supabaseClient.auth.updateUser({password});
+ if(error){status(statusId,error.message||"Mise à jour impossible.");return false;}
+ $(formId).reset();status(statusId,"Mot de passe mis à jour avec succès.",true);return true;
+}
+$("changePasswordForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget;busy(f,true);clearStatus("changePasswordStatus");try{await updateAccountPassword("newPassword","confirmPassword","changePasswordStatus","changePasswordForm")}catch(err){status("changePasswordStatus",err.message||"Erreur lors de la mise à jour.")}finally{busy(f,false)}});
+$("recoveryPasswordForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget;busy(f,true);clearStatus("recoveryPasswordStatus");try{const ok=await updateAccountPassword("recoveryPassword","recoveryPasswordConfirm","recoveryPasswordStatus","recoveryPasswordForm");if(ok){$("recoveryPanel").classList.add("hidden");history.replaceState({},document.title,window.location.pathname);}}catch(err){status("recoveryPasswordStatus",err.message||"Erreur lors de la réinitialisation.")}finally{busy(f,false)}});
+function detectRecoveryLink(){
+ const hash=new URLSearchParams(window.location.hash.replace(/^#/ ,""));
+ if(hash.get("type")==="recovery"){$("recoveryPanel").classList.remove("hidden");$("recoveryPanel").scrollIntoView({behavior:"smooth",block:"center"});}
+}
+detectRecoveryLink();
+
+$("logoutBtn").addEventListener("click",async()=>{const {error}=await supabaseClient.auth.signOut();if(error){alert(error.message);return}signedOut()});
+
+// ESPACE ADMIN : vérification du rôle via table admin_roles
+async function checkAdminRole(user){
+ const {data,error}=await supabaseClient.from("admin_roles").select("role").eq("user_id",user.id).maybeSingle();
+ if(error){console.warn("Admin role check:",error.message);return null}
+ return data?.role||null;
+}
+
+async function loadAdminProfessionals(){
+ const box=$('pendingProfessionals');if(!box)return;
+ box.innerHTML='<p class="small">Chargement des demandes professionnelles...</p>';
+ const {data,error}=await supabaseClient.from('professional_directory')
+  .select('id,full_name,professional_type,description,phone,whatsapp,city,address,status,created_at,user_id')
+  .in('status',['pending','approved','rejected']).order('created_at',{ascending:false});
+ if(error){box.innerHTML='<p class="small">Chargement impossible : '+esc(error.message)+'</p>';return;}
+ if(!data?.length){box.innerHTML='<p class="small">Aucune demande professionnelle enregistrée.</p>';return;}
+ box.innerHTML=data.map(p=>`<article class="directory-admin-item"><div class="admin-top"><strong>${esc(p.full_name)}</strong><span class="directory-status">${p.status==='pending'?'⏳ En attente':p.status==='approved'?'✅ Approuvée':'❌ Rejetée'}</span></div><p class="small">${esc(p.professional_type)} · ${esc(p.city||'Ville non précisée')}${p.address?' · '+esc(p.address):''}</p><p>${esc(p.description||'Aucune description')}</p><p class="small">Téléphone : ${esc(p.phone||'—')} · WhatsApp : ${esc(p.whatsapp||'—')} · Demande du ${p.created_at?new Date(p.created_at).toLocaleDateString('fr-FR'):'—'}</p><div class="directory-admin-actions">${p.status!=='approved'?`<button class="btn-approve" onclick="moderateProfessional('${p.id}','approved')">Approuver</button>`:''}${p.status!=='rejected'?`<button class="btn-danger" onclick="moderateProfessional('${p.id}','rejected')">Rejeter</button>`:''}</div></article>`).join('');
+}
+async function moderateProfessional(id,nextStatus){
+ const {data:{user}}=await supabaseClient.auth.getUser();
+ const role=user?await checkAdminRole(user):null;
+ if(!['super_admin','admin','moderator'].includes(role)){status('directoryAdminStatus','Accès refusé : rôle administrateur requis.');return;}
+ const {error}=await supabaseClient.from('professional_directory').update({status:nextStatus}).eq('id',id);
+ if(error){status('directoryAdminStatus','Modification impossible : '+error.message);return;}
+ status('directoryAdminStatus',nextStatus==='approved'?'Fiche professionnelle approuvée et publiée.':'Fiche professionnelle rejetée.',true);
+ await loadAdminProfessionals();await loadProfessionalDirectory();
+}
+
+async function loadAdminServiceRequests(){
+ const box=$('adminServiceRequests');if(!box)return;box.innerHTML='<p class="small">Chargement...</p>';
+ const {data,error}=await supabaseClient.from('service_requests').select('id,title,category,description,city,phone_contact,status,created_at').order('created_at',{ascending:false}).limit(100);
+ if(error){box.innerHTML='<p class="small">Chargement impossible : '+esc(error.message)+'</p>';return;}
+ if(!data?.length){box.innerHTML='<p class="small">Aucune demande enregistrée.</p>';return;}
+ box.innerHTML=data.map(r=>'<article class="service-admin"><div class="admin-top"><strong>'+esc(r.title)+'</strong><span class="service-badge">'+serviceStatusLabel(r.status)+'</span></div><p class="small">'+esc(r.category)+' · '+esc(r.city)+' · '+esc(r.phone_contact||'')+'</p><p>'+esc(r.description)+'</p><div class="service-actions">'+(r.status!=='in_progress'?'<button onclick="moderateServiceRequest(\''+r.id+'\',\'in_progress\')">Marquer en cours</button>':'')+(r.status!=='completed'?'<button class="btn-approve" onclick="moderateServiceRequest(\''+r.id+'\',\'completed\')">Terminer</button>':'')+(r.status!=='cancelled'?'<button class="btn-danger" onclick="moderateServiceRequest(\''+r.id+'\',\'cancelled\')">Annuler</button>':'')+'</div></article>').join('');
+}
+async function moderateServiceRequest(id,next){const {data:{user}}=await supabaseClient.auth.getUser();const role=user?await checkAdminRole(user):null;if(!['super_admin','admin','moderator'].includes(role)){status('adminServiceStatus','Accès administrateur requis.');return;}const {error}=await supabaseClient.from('service_requests').update({status:next}).eq('id',id);if(error){status('adminServiceStatus','Modification impossible : '+error.message);return;}status('adminServiceStatus','Statut de la demande mis à jour.',true);await loadAdminServiceRequests();await loadServiceRequests();await loadMyServiceRequests();}
+async function setupAdmin(user){
+ const role=await checkAdminRole(user);
+ if(["super_admin","admin","moderator"].includes(role)){
+  $("adminPanel").classList.remove("hidden");
+  $("adminStatus").className="status";
+  loadAdminListings();loadAdminProfessionals();loadAdminServiceRequests();
+ }else $("adminPanel").classList.add("hidden");
+}
+function adminStatus(msg,ok=false){status("adminStatus",msg,ok)}
+async function loadAdminListings(){
+ const box=$("pendingListings");box.innerHTML='<p class="small">Chargement des annonces...</p>';
+ const {data,error}=await supabaseClient.from("listings").select("id,title,category,description,price,city,phone_contact,photos,moderation_status,status,created_at,seller_id").eq("moderation_status","pending").order("created_at",{ascending:false});
+ if(error){box.innerHTML='<p class="small">Chargement impossible : '+esc(error.message)+'</p>';return}
+ const {count:total}=await supabaseClient.from("listings").select("id",{count:"exact",head:true});
+ const {count:approved}=await supabaseClient.from("listings").select("id",{count:"exact",head:true}).eq("moderation_status","approved");
+ const {count:rejected}=await supabaseClient.from("listings").select("id",{count:"exact",head:true}).eq("moderation_status","rejected");
+ $("adminStats").innerHTML=[
+  ["Total annonces",total??0],["En attente",data.length],["Approuvées",approved??0],["Rejetées",rejected??0]
+ ].map(([label,val])=>'<div class="card"><strong>'+esc(label)+'</strong><h2>'+val+'</h2></div>').join("");
+ if(!data.length){box.innerHTML='<p class="small">Aucune annonce en attente de validation.</p>';return}
+ box.innerHTML=data.map(a=>`<article class="admin-listing"><h3>${esc(a.title)}</h3><div class="small">${esc(a.category||"")} · ${esc(a.city||"")} · ${Number(a.price||0).toLocaleString("fr-FR")} MRU</div><p>${esc(a.description||"Aucune description")}</p><div class="small">Contact : ${esc(a.phone_contact||"Non renseigné")} · Déposée le ${new Date(a.created_at).toLocaleDateString("fr-FR")}</div>${(a.photos||[]).map(url=>'<img src="'+esc(url)+'" alt="Photo annonce">').join("")}<div><button class="btn-approve" onclick="moderateListing('${a.id}','approved')">Approuver</button> <button class="btn-danger" onclick="moderateListing('${a.id}','rejected')">Rejeter</button></div></article>`).join("");
+}
+async function moderateListing(id,nextStatus){
+ $("pendingListings").querySelectorAll("button").forEach(b=>b.disabled=true);
+ const {data:{user}}=await supabaseClient.auth.getUser();
+ const role=user?await checkAdminRole(user):null;
+ if(!["super_admin","admin","moderator"].includes(role)){adminStatus("Accès refusé : rôle administrateur requis.");loadAdminListings();return}
+ const {error}=await supabaseClient.from("listings").update({moderation_status:nextStatus}).eq("id",id);
+ if(error){adminStatus("Action impossible : "+error.message);loadAdminListings();return}
+ adminStatus(nextStatus==="approved"?"Annonce approuvée et publiée.":"Annonce rejetée.",true);
+ loadAdminListings();
+}
+$("refreshAdminBtn").addEventListener("click",()=>{loadAdminListings();loadAdminProfessionals();loadAdminServiceRequests();});
+// ENVOI DES PHOTOS AU BUCKET SUPABASE STORAGE
+async function uploadPhotos(user,files){
+ const urls=[];
+ for(const file of files){
+  if(!["image/jpeg","image/png","image/webp"].includes(file.type))throw new Error("Format photo non accepté : "+file.name);
+  if(file.size>2*1024*1024)throw new Error("La photo "+file.name+" dépasse 2 Mo.");
+  const filename=file.name.toLowerCase().replace(/[^a-z0-9._-]/g,"-");
+  const objectPath=user.id+"/"+Date.now()+"-"+Math.random().toString(36).slice(2,8)+"-"+filename;
+  const {error}=await supabaseClient.storage.from(PHOTO_BUCKET).upload(objectPath,file,{cacheControl:"3600",upsert:false,contentType:file.type});
+  if(error)throw error;
+  const {data}=supabaseClient.storage.from(PHOTO_BUCKET).getPublicUrl(objectPath);urls.push(data.publicUrl);
+ }
+ return urls;
+}
+
+// PUBLICATION : moderation_status est toujours fixé à pending par le navigateur.
+// La politique RLS INSERT doit également imposer cette valeur.
+$("listingForm").addEventListener("submit",async e=>{
+ e.preventDefault();const f=e.currentTarget;clearStatus("listingStatus");busy(f,true);
+ try{
+  const {data:{user},error:userError}=await supabaseClient.auth.getUser();if(userError)throw userError;if(!user)throw new Error("Session expirée. Reconnecte-toi.");
+  const photos=await uploadPhotos(user,Array.from($("listingPhotos").files));
+  const listing={seller_id:user.id,category:$("listingCategory").value,title:$("listingTitle").value.trim(),description:$("listingDescription").value.trim(),price:Number($("listingPrice").value),phone_contact:$("listingPhone").value.trim()||user.user_metadata?.phone||null,city:$("listingCity").value.trim(),photos,status:"available",moderation_status:"pending"};
+  const {error}=await supabaseClient.from("listings").insert(listing);if(error)throw error;
+  f.reset();status("listingStatus","Annonce enregistrée. Elle est en attente de validation avant sa publication publique.",true);loadMyListings();
+ }catch(err){status("listingStatus","Publication impossible : "+(err.message||"Erreur inconnue")+". Vérifie les politiques RLS, les colonnes et le bucket de stockage.")}
+ finally{busy(f,false)}
+});
+
+// ESPACE VENDEUR V14 : suivi, modification, statut vendu et suppression
+let sellerListings=[]; let sellerFilter='all';
+function sellerBadge(a){const m=a.moderation_status||'pending';const st=a.status||'available';if(m==='pending')return '⏳ En attente de validation';if(m==='rejected')return '❌ Rejetée';if(m==='approved'&&st==='sold')return '💰 Vendue';if(m==='approved'&&st==='reserved')return '🔖 Réservée';if(m==='approved')return '✅ En ligne';return m+' · '+st}
+function renderSellerListings(){
+ const box=$('myListings'); const data=sellerListings.filter(a=>sellerFilter==='all'||(sellerFilter==='pending'&&a.moderation_status==='pending')||(sellerFilter==='approved'&&a.moderation_status==='approved'&&a.status!=='sold')||(sellerFilter==='rejected'&&a.moderation_status==='rejected')||(sellerFilter==='sold'&&a.status==='sold'));
+ const counts={total:sellerListings.length,pending:sellerListings.filter(a=>a.moderation_status==='pending').length,approved:sellerListings.filter(a=>a.moderation_status==='approved'&&a.status!=='sold').length,rejected:sellerListings.filter(a=>a.moderation_status==='rejected').length,sold:sellerListings.filter(a=>a.status==='sold').length};
+ $('sellerSummary').innerHTML=[['Total',counts.total],['En attente',counts.pending],['En ligne',counts.approved],['Rejetées',counts.rejected],['Vendues',counts.sold]].map(([label,n])=>`<div class="card" style="margin:0;padding:12px"><div class="small">${label}</div><strong style="font-size:1.3rem;color:var(--green)">${n}</strong></div>`).join('');
+ if(!data.length){box.innerHTML='<p class="small">Aucune annonce dans cette catégorie.</p>';return;}
+ box.innerHTML=data.map(a=>`<article class="admin-listing"><strong>${esc(a.title)}</strong><div class="small">${esc(a.category||'')} · ${esc(a.city||'')} · ${Number(a.price||0).toLocaleString('fr-FR')} MRU</div><p class="small">${sellerBadge(a)} · Publiée le ${a.created_at?new Date(a.created_at).toLocaleDateString('fr-FR'):'—'}</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="secondary" onclick="sellerEdit('${a.id}')">Modifier</button>${a.moderation_status==='approved'&&a.status!=='sold'?`<button onclick="sellerSetStatus('${a.id}','sold')">Marquer vendu</button>`:a.status==='sold'?`<button class="secondary" onclick="sellerSetStatus('${a.id}','available')">Remettre disponible</button>`:''}<button class="btn-danger" onclick="sellerDelete('${a.id}')">Supprimer</button></div></article>`).join('');
+}
+const NOTIFICATION_READ_KEY='rim_agroovin_notifications_read_v1';
+function notificationReadKey(){const u=supabaseClient.auth.getUser;return 'rim_agroovin_notifications_read_v1_'+(window.__rimCurrentUserId||'guest')}
+function renderNotifications(){
+ const box=$('notificationList'),summary=$('notificationSummary');if(!box||!summary)return;
+ const rows=[...sellerListings].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).map(a=>{
+  const m=a.moderation_status||'pending',st=a.status||'available';let icon='⏳',title='Annonce en attente de validation',desc='Ton annonce « '+esc(a.title)+' » a bien été enregistrée et attend la validation de l’équipe.';
+  if(m==='approved'){icon='✅';title='Annonce approuvée';desc='Ton annonce « '+esc(a.title)+' » est approuvée'+(st==='sold'?' et marquée comme vendue.':st==='reserved'?' et indiquée comme réservée.':'. Elle peut être visible sur le marketplace.')}
+  if(m==='rejected'){icon='⚠️';title='Annonce rejetée';desc='Ton annonce « '+esc(a.title)+' » n’a pas été approuvée. Consulte son statut dans Mon espace vendeur et contacte l’équipe si nécessaire.'}
+  if(m==='approved'&&st==='sold'){icon='💰';title='Annonce marquée comme vendue';desc='« '+esc(a.title)+' » est marquée comme vendue.'}
+  return {id:String(a.id),icon,title,desc,date:a.created_at};
+ });
+ const pending=sellerListings.filter(a=>a.moderation_status==='pending').length,approved=sellerListings.filter(a=>a.moderation_status==='approved').length,rejected=sellerListings.filter(a=>a.moderation_status==='rejected').length;
+ summary.innerHTML='<strong>'+sellerListings.length+' annonce(s) suivie(s)</strong><br>⏳ '+pending+' en attente · ✅ '+approved+' approuvée(s) · ⚠️ '+rejected+' rejetée(s)';
+ if(!rows.length){box.innerHTML='<p class="small">Aucune notification pour le moment. Publie une annonce pour commencer à suivre son traitement.</p>';return;}
+ box.innerHTML=rows.map(n=>'<div class="notification-item"><div class="notification-icon">'+n.icon+'</div><div><strong>'+n.title+'</strong><p>'+n.desc+'</p><div class="notification-date">'+(n.date?'Publication : '+new Date(n.date).toLocaleString('fr-FR'):'Statut actuel')+'</div></div></div>').join('');
+}
+async function loadMyListings(){
+ const box=$('myListings');box.innerHTML='<p class="small">Chargement...</p>';
+ const {data:{user}}=await supabaseClient.auth.getUser();if(!user){box.textContent='Connecte-toi pour voir tes annonces.';return}
+ const {data,error}=await supabaseClient.from('listings').select('id,title,description,category,price,city,status,moderation_status,created_at').eq('seller_id',user.id).order('created_at',{ascending:false});
+ if(error){box.textContent='Erreur de chargement : '+error.message;return}
+ sellerListings=data||[];renderSellerListings();renderNotifications();
+}
+async function sellerEdit(id){
+ const a=sellerListings.find(x=>x.id===id);if(!a)return;
+ const title=prompt('Modifier le titre :',a.title);if(title===null)return;if(!title.trim()){alert('Le titre ne peut pas être vide.');return;}
+ const priceRaw=prompt('Modifier le prix (MRU) :',a.price);if(priceRaw===null)return;const price=Number(priceRaw);if(!Number.isFinite(price)||price<0){alert('Prix invalide.');return;}
+ const city=prompt('Modifier la ville/localité :',a.city||'');if(city===null)return;
+ const description=prompt('Modifier la description :',a.description||'');if(description===null)return;
+ const {error}=await supabaseClient.from('listings').update({title:title.trim(),price,city:city.trim(),description}).eq('id',id);
+ if(error){status('sellerStatus','Modification impossible : '+error.message);return;}status('sellerStatus','Annonce modifiée. Si elle est déjà approuvée, elle reste publiée.',true);await loadMyListings();
+}
+async function sellerSetStatus(id,next){
+ const {error}=await supabaseClient.from('listings').update({status:next}).eq('id',id);
+ if(error){status('sellerStatus','Changement de statut impossible : '+error.message);return;}status('sellerStatus',next==='sold'?'Annonce marquée comme vendue.':'Annonce remise disponible.',true);await loadMyListings();await loadMarketplace();
+}
+async function sellerDelete(id){if(!confirm('Supprimer définitivement cette annonce ?'))return;
+ const {error}=await supabaseClient.from('listings').delete().eq('id',id);
+ if(error){status('sellerStatus','Suppression impossible : '+error.message);return;}status('sellerStatus','Annonce supprimée.',true);await loadMyListings();await loadMarketplace();
+}
+$('refreshListingsBtn').addEventListener('click',loadMyListings);
+$('refreshNotificationsBtn').addEventListener('click',loadMyListings);
+$('myListingsCard').querySelectorAll('.seller-filter').forEach(b=>b.addEventListener('click',()=>{sellerFilter=b.dataset.filter;renderSellerListings()}));
+supabaseClient.auth.onAuthStateChange((_event,session)=>{if(session)signedIn(session.user);else signedOut()});
+refreshSession();
+loadMarketplace();
+loadProfessionalDirectory();
+</script>
+
+<div id="listingDetailModal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Détails de l'annonce" onclick="if(event.target===this)closeListingDetails()">
+ <div class="detail-modal"><button class="modal-close" onclick="closeListingDetails()" aria-label="Fermer">✕ Fermer</button><div id="listingDetailContent"></div></div>
+</div>
+<script>
+function openListingDetails(id){
+ const a=marketData.find(x=>String(x.id)===String(id));if(!a)return;
+ const photos=(a.photos||[]).filter(Boolean);
+ const gallery=photos.length?'<div class="detail-gallery">'+photos.map(url=>'<img loading="lazy" src="'+esc(url)+'" alt="Photo de '+esc(a.title)+'">').join('')+'</div>':'<div style="height:180px;background:#e9efe9;border-radius:12px;display:grid;place-items:center;font-size:3rem">🐑</div>';
+ const created=a.created_at?new Date(a.created_at).toLocaleDateString('fr-FR'):'Non précisée';
+ $('listingDetailContent').innerHTML=gallery+'<h2>'+esc(a.title)+'</h2><div class="market-price">'+Number(a.price||0).toLocaleString('fr-FR')+' MRU</div><div class="market-meta">'+esc(a.category||'')+' · 📍 '+esc(a.city||'Localité non précisée')+' · Publié le '+created+'</div><h3>Description</h3><div class="detail-description">'+esc(a.description||'Aucune description fournie.')+'</div>'+contactLinks(a.phone_contact);
+ $('listingDetailModal').classList.add('open');document.body.style.overflow='hidden';
+}
+function closeListingDetails(){ $('listingDetailModal').classList.remove('open');document.body.style.overflow=''; }
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeListingDetails()});
+</script>
+</body></html>
