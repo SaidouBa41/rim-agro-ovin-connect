@@ -176,6 +176,10 @@ input, select, textarea, button { max-width:100%; min-width:0; }
  body.mobile-nav-lock{overflow:hidden}
 }
 
+
+.space-link{flex:0 0 auto;display:inline-flex;align-items:center;text-decoration:none;border-radius:10px;background:#e9f1ea;color:#244b35;padding:10px 13px;font-weight:700;white-space:nowrap}
+.space-link:hover{background:#dceade}
+@media(max-width:700px){.space-link{width:100%;justify-content:flex-start;padding:12px 14px}}
 </style>
 </head>
 <body>
@@ -194,6 +198,8 @@ input, select, textarea, button { max-width:100%; min-width:0; }
     <button type="button" data-view="services">🧰 Services</button>
     <button type="button" data-view="messages">💬 Messagerie</button>
     <button type="button" data-view="account">👤 Mon espace</button>
+    <a class="space-link" href="espaces/clients/index.html">🛍️ Espace client</a>
+    <a class="space-link" href="espaces/interne/index.html">🔐 Espace équipe</a>
   </nav>
   <!-- IMAGE PRINCIPALE - ACCUEIL : ajouter une image de couverture ultérieurement -->
   <section class="hero"><div class="hero-copy"><span class="hero-kicker">LE MARCHÉ AGROPASTORAL, EN UN SEUL ESPACE</span><h1>Connectons les acteurs<br>du monde agropastoral.</h1><p>Découvrez des annonces, trouvez des produits et rapprochez-vous des éleveurs, agriculteurs et fournisseurs partout en Mauritanie.</p><div class="hero-actions"><a class="hero-link primary" href="#marketplacePublic">Explorer les annonces</a><a class="hero-link outline" href="#authCards">Rejoindre la plateforme</a></div></div><div class="hero-symbol" aria-hidden="true">🐑<span>🌿</span></div></section>
