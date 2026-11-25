@@ -40,3 +40,9 @@ contrôlées avec historique, photos réservées à l'équipe (2.1 à 2.6) · ve
 Reste à faire : 1.4 (RLS du portail public : exporter le SQL des tables `listings`, `profiles`, `conversations`, `messages`,
 `service_requests`, `admin_roles`), tests avec 3 comptes, activer le captcha et la confirmation email dans Supabase (Authentication).
 Non testé contre votre base Supabase réelle : exécuter d'abord sur un projet de test.
+
+## V8 — statut client sur demande
+
+Un compte n'est plus un client. Le visiteur crée un compte, consulte le catalogue, puis demande à devenir client.
+L'administrateur approuve (durée d'abonnement en mois), refuse ou suspend depuis l'onglet « Gestion des commandes ».
+Script : `sql/RIM_AgroOvin_V8_Statut_Client_Abonnement.sql` (à exécuter après V6.1 ; indépendant de V7). Les clients ayant déjà commandé sont repris pour 12 mois.
