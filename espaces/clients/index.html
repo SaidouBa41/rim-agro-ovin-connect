@@ -9,9 +9,9 @@
 <div id="authModal" class="modal"><div><div class="row" style="justify-content:space-between"><h2 id="authTitle">Connexion</h2><button class="alt" onclick="hideAuth()">Fermer</button></div><form id="authForm" class="form"><label>Email</label><input id="email" type="email" autocomplete="email" required><label>Mot de passe</label><input id="password" type="password" minlength="8" required><label id="nameLabel" class="hidden">Nom complet</label><input id="fullName" class="hidden" placeholder="Votre nom complet"><label id="phoneLabel" class="hidden">Téléphone WhatsApp</label><input id="phone" class="hidden" type="tel" autocomplete="tel" placeholder="+222 …"><button id="authSubmit">Se connecter</button><button type="button" class="alt" onclick="toggleAuthMode()" id="modeBtn">Créer un compte</button></form><p class="muted">Utilisez le compte client créé avec votre adresse email. La confirmation email dépend de la configuration Supabase.</p></div></div>
 <div id="orderModal" class="modal"><div><div class="row" style="justify-content:space-between"><h2>Réserver ce mouton</h2><button class="alt" onclick="closeOrder()">Fermer</button></div><div id="orderDetails"></div><form id="orderForm"><label>Message ou précision (facultatif)</label><textarea id="orderNote" placeholder="Livraison, disponibilité, question…"></textarea><button>Confirmer ma demande de réservation</button></form></div></div>
 <script>
-const SUPABASE_URL='https://yxvfmigqkcbiodtgjooi.supabase.co';
-const SUPABASE_KEY='sb_publishable_Xp3rhQbII8gAXxVaJPuRKg_bPEJBnCm';
-let db=null,user=null,isAdmin=false,animals=[],orders=[],events=[],selectedAnimal=null,signupMode=false;
+const SUPABASE_URL = 'https://yxvfmigqkcbiodtgjooi.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Xp3rhQbII8gAXxVaJPuRKg_bPEJBnCm';
+let db=null,user=null,isAdmin=false,animals=[],orders=[],selectedAnimal=null,signupMode=false;
 const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=n=>Number(n||0).toLocaleString('fr-FR',{maximumFractionDigits:0})+' MRU';
 const labels={pending:'En attente',confirmed:'Confirmée',refused:'Refusée',preparing:'Préparation',ready:'Prête au retrait',delivering:'En livraison',completed:'Terminée',cancelled:'Annulée'};
