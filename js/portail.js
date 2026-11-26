@@ -240,7 +240,7 @@ $("signupForm").addEventListener("submit",async e=>{
  e.preventDefault();const f=e.currentTarget;clearStatus("signupStatus");busy(f,true);
  const full_name=$("signupName").value.trim(),phone=$("signupPhone").value.trim(),city=$("signupCity").value.trim(),role=$("signupRole").value,email=$("signupEmail").value.trim(),password=$("signupPassword").value;
  try{
-  const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin+window.location.pathname,data:{full_name,phone,city,role}}});if(error)throw error;
+  const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:RIM_CONFIG.siteUrl,data:{full_name,phone,city,role}}});if(error)throw error;
   if(data.session){await saveProfile(data.user,{full_name,phone,city,role});signedIn(data.user);status("signupStatus","Compte créé et profil enregistré.",true)}
   else status("signupStatus","Inscription enregistrée. Vérifie ta boîte email pour confirmer ton adresse, puis connecte-toi.",true);
  }catch(err){status("signupStatus",err.message||"Erreur d'inscription")}finally{busy(f,false)}
@@ -256,7 +256,7 @@ $("resetRequestForm").addEventListener("submit",async e=>{
  e.preventDefault();const f=e.currentTarget;busy(f,true);clearStatus("resetRequestStatus");
  try{
   const email=$("resetEmail").value.trim();
-  const redirectTo=window.location.origin+window.location.pathname;
+  const redirectTo=RIM_CONFIG.siteUrl;
   const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo});if(error)throw error;
   status("resetRequestStatus","Si cette adresse correspond à un compte, un lien de réinitialisation sera envoyé. Vérifie aussi tes courriers indésirables.",true);
  }catch(err){status("resetRequestStatus",err.message||"Envoi du lien impossible.") }finally{busy(f,false)}
