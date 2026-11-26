@@ -1,5 +1,5 @@
-const SUPABASE_URL=RIM_CONFIG.url;
-const SUPABASE_KEY=RIM_CONFIG.key;
+const SUPABASE_URL="https://yxvfmigqkcbiodtgjooi.supabase.co";
+const SUPABASE_KEY="sb_publishable_Xp3rhQbII8gAXxVaJPuRKg_bPEJBnCm";
 let db=null,user=null,isAdmin=false,animals=[],orders=[],events=[],membership=null,selectedAnimal=null,signupMode=false;
 const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=n=>Number(n||0).toLocaleString('fr-FR',{maximumFractionDigits:0})+' MRU';
