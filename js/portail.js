@@ -1,9 +1,9 @@
 // =====================================
 // CONFIGURATION SUPABASE - RIM AGROOVIN
 // =====================================
-const SUPABASE_URL=RIM_CONFIG.url;
+const SUPABASE_URL="https://yxvfmigqkcbiodtgjooi.supabase.co";
 // Clé publiable uniquement : ne jamais mettre sb_secret ou service_role dans le navigateur.
-const SUPABASE_KEY=RIM_CONFIG.key;
+const SUPABASE_KEY="sb_publishable_Xp3rhQbII8gAXxVaJPuRKg_bPEJBnCm";
 const PHOTO_BUCKET=RIM_CONFIG.photoBucket;
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
