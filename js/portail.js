@@ -1,343 +1,10 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RIM AgroOvin Connect — V25 Navigation par rubriques</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-/* COULEURS DU SITE */
-:root{--green:#174D32;--green2:#267044;--bg:#F1F5F1;--ink:#183126;--muted:#66756c;--danger:#a52b2b}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,sans-serif;scroll-behavior:smooth}
-header{background:var(--green);color:white;padding:18px 5%;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.brand{font-size:1.25rem;font-weight:800}.tagline{color:#e3eadf;margin-top:5px}main{max-width:1050px;margin:28px auto;padding:0 16px}
-.hero{background:linear-gradient(120deg,var(--green),#2f774d);color:white;padding:26px;border-radius:18px;margin-bottom:20px}.hero p{line-height:1.5}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}.card{background:white;border-radius:16px;padding:21px;box-shadow:0 5px 18px #193b2710;margin-bottom:18px}
-h2{color:var(--green);margin-top:0}label{display:block;font-weight:700;margin:12px 0 6px}input,select,textarea{width:100%;padding:12px;border:1px solid #cbd6cd;border-radius:9px;font-size:1rem;background:white;color:var(--ink)}textarea{min-height:100px;resize:vertical}
-button{background:var(--green);color:white;border:0;border-radius:9px;padding:12px 16px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:14px}button:hover{background:var(--green2)}button.secondary{background:#e7eee9;color:var(--green)}button:disabled{opacity:.55}.wide{width:100%}
-.small{font-size:.87rem;color:var(--muted);line-height:1.5}.status{display:none;margin-top:13px;padding:12px;border-radius:9px;white-space:pre-wrap}.status.ok{display:block;background:#e8f5eb;color:#1c6234}.status.err{display:block;background:#fff0f0;color:var(--danger)}
-.sessionbar{display:none;background:#e4eee6;border-radius:12px;padding:14px;margin-bottom:18px}.hidden{display:none!important}.notice{background:#fff8e9;border:1px solid #ead7a9;padding:12px;border-radius:10px;line-height:1.5}
-footer{text-align:center;color:var(--muted);padding:26px}@media(max-width:600px){.card{padding:17px}.hero{padding:20px}}
-
-.admin-panel{border:2px solid #174D32;background:#f8fbf8}
-.admin-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.admin-listing{border:1px solid #dbe5dc;border-radius:12px;padding:14px;margin:12px 0;background:#fff}
-.admin-listing img{width:100%;max-width:170px;height:130px;object-fit:cover;border-radius:8px}
-.btn-danger{background:#9e3030}.btn-danger:hover{background:#7e2222}
-.btn-approve{background:#247344}
-@media(max-width:600px){.admin-top{align-items:flex-start}}
-
-/* MARKETPLACE PUBLIC V13 */
-.market-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:24px 0 12px}
-.market-controls{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:16px}
-.market-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
-.market-card{background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e1e9e2;box-shadow:0 4px 14px #193b2708}
-.market-card img{width:100%;height:190px;object-fit:cover;background:#e9efe9}
-.market-card .market-body{padding:15px}.market-card h3{margin:0 0 8px;color:var(--green)}
-.market-price{font-size:1.25rem;font-weight:800;color:#267044;margin:8px 0}
-.market-meta{font-size:.9rem;color:var(--muted);margin:6px 0}
-.market-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.market-actions a{display:inline-block;text-decoration:none;padding:10px 12px;border-radius:8px;background:var(--green);color:white;font-weight:bold}.market-actions a.call{background:#e9efe9;color:var(--green)}
-@media(max-width:650px){.market-controls{grid-template-columns:1fr}.market-card img{height:175px}}
-.detail-btn{width:100%;background:#e9efe9;color:var(--green);margin-top:8px}
-.modal-overlay{position:fixed;inset:0;background:#10251bcc;z-index:1000;display:none;overflow:auto;padding:20px}
-.modal-overlay.open{display:flex;align-items:center;justify-content:center}
-.detail-modal{background:#fff;width:min(850px,100%);max-height:92vh;overflow:auto;border-radius:16px;padding:20px;position:relative}
-.modal-close{position:sticky;top:0;float:right;background:#f0f4f0;color:var(--green);margin:0 0 10px 10px}
-.detail-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:12px 0}
-.detail-gallery img{width:100%;height:145px;object-fit:cover;border-radius:10px;background:#e9efe9}
-.detail-modal h2{margin-top:6px}.detail-description{white-space:pre-wrap;line-height:1.6}
-@media(max-width:600px){.modal-overlay{padding:8px}.detail-modal{padding:14px;max-height:96vh}.detail-gallery img{height:110px}}
-
-
-/* V16 VISUAL POLISH — keep existing Supabase and feature logic intact */
-:root{--green:#174D32;--green2:#2a7549;--bg:#f3f6f2;--ink:#1c3427;--muted:#68776d;--sand:#e9dcc3}
-body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:linear-gradient(180deg,#edf4ed 0,#f5f7f4 360px,#f3f6f2 100%);line-height:1.5}
-header{align-items:center;background:linear-gradient(110deg,#123d28,#1d603c);padding:20px max(5%,calc((100% - 1200px)/2));box-shadow:0 8px 26px #123d2820}
-.brand{letter-spacing:.2px;font-size:1.38rem}.tagline{font-size:.92rem;opacity:.94}
-main{max-width:1200px;margin:30px auto;padding:0 20px}
-.hero{position:relative;overflow:hidden;min-height:270px;padding:clamp(24px,5vw,48px);border-radius:24px;background:linear-gradient(120deg,#15452d 0%,#267046 75%,#3c8052);box-shadow:0 15px 36px #174d3220;display:flex;align-items:center;justify-content:space-between;gap:20px}
-.hero-copy{max-width:720px;position:relative;z-index:1}.hero-kicker{font-size:.78rem;font-weight:800;letter-spacing:1.5px;color:#d5e7d7}.hero h1{font-size:clamp(1.85rem,4vw,3rem);line-height:1.1;margin:14px 0;color:white}.hero p{max-width:620px;font-size:1.04rem;color:#e7f0e7;line-height:1.65}
-.hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.hero-link{display:inline-block;text-decoration:none;border-radius:11px;padding:12px 17px;font-weight:800}.hero-link.primary{background:#f0dfbe;color:#224a31}.hero-link.outline{border:1px solid #ffffff85;color:white;background:#ffffff10}.hero-symbol{font-size:clamp(4rem,9vw,7rem);opacity:.95;position:relative;margin-right:2vw;filter:drop-shadow(0 8px 8px #092b18aa)}.hero-symbol span{font-size:.45em;position:absolute;right:-.2em;bottom:-.1em}
-.card{border:1px solid #e3ebe3;border-radius:18px;box-shadow:0 6px 24px #153e2510;padding:clamp(16px,3vw,24px);transition:box-shadow .2s,transform .2s}.card h2{letter-spacing:-.3px}.market-card{border:1px solid #e5ece5;box-shadow:0 7px 22px #153e2510;transition:transform .2s,box-shadow .2s}.market-card:hover{transform:translateY(-3px);box-shadow:0 12px 28px #153e2518}.market-card img{height:205px}.market-price{font-size:1.35rem}
-input,select,textarea{border-color:#d6e0d7;transition:border-color .15s,box-shadow .15s}input:focus,select:focus,textarea:focus{outline:none;border-color:#2a7549;box-shadow:0 0 0 3px #26704418}
-button{box-shadow:0 3px 10px #174d3215;transition:transform .15s,filter .15s}button:hover{filter:brightness(1.04);transform:translateY(-1px)}button.secondary{box-shadow:none}
-.sessionbar{border:1px solid #c9ddce}.admin-panel{border-color:#174d32}.notice{border-radius:12px}
-footer{padding:34px 18px;color:#64746a;font-size:.92rem}
-@media(max-width:700px){main{margin:18px auto;padding:0 12px}.hero{min-height:unset;border-radius:18px}.hero-symbol{font-size:3.5rem;align-self:flex-end;margin:0}.hero h1{font-size:1.85rem}.hero p{font-size:.96rem}.hero-actions{gap:8px}.hero-link{padding:11px 13px}.market-card img{height:180px}}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
-
-
-/* V18 - FAVORIS */
-.favorite-btn{width:100%;background:#f4eee5;color:#76521c;margin-top:8px}.favorite-btn.is-favorite{background:#fbe9e8;color:#a52b2b}.favorites-empty{padding:18px;background:#f7f9f6;border:1px dashed #cbd8cc;border-radius:12px;color:var(--muted)}
-/* V17 - ANNUAIRE PROFESSIONNEL (base annonces publiques) */
-.directory-intro{margin:0 0 14px;color:var(--muted)}.directory-controls{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin:14px 0}.directory-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}.directory-card{background:#fff;border:1px solid #e3ebe3;border-radius:15px;padding:16px;box-shadow:0 5px 18px #153e2508}.directory-card h3{margin:0 0 7px;color:var(--green)}.directory-tag{display:inline-block;background:#edf5ed;color:#28623c;border-radius:999px;padding:5px 9px;font-size:.78rem;font-weight:700}.directory-card .market-actions{margin-top:12px}
-@media(max-width:650px){.directory-controls{grid-template-columns:1fr}}
-
-
-/* V19 - CENTRE DE SUIVI ET NOTIFICATIONS */
-.notification-card{border:1px solid #d8e6da;background:linear-gradient(180deg,#fbfdfb,#fff)}.notification-item{display:flex;gap:12px;align-items:flex-start;padding:13px 4px;border-bottom:1px solid #e8eee8}.notification-item:last-child{border-bottom:0}.notification-icon{width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:#edf5ee;display:grid;place-items:center;font-size:1.15rem}.notification-item strong{display:block;color:var(--green);margin-bottom:3px}.notification-item p{margin:0;color:var(--muted);font-size:.9rem;line-height:1.45}.notification-date{font-size:.78rem;color:#7b887e;margin-top:4px}
-
-
-/* V22 — annuaire professionnel autonome */
-.directory-form{background:#f7faf7;border:1px solid #dce8dd;border-radius:14px;padding:16px;margin:18px 0}
-.directory-form h3{margin:0 0 8px;color:var(--green)}
-.directory-card .directory-description{white-space:pre-wrap;line-height:1.5}
-.directory-admin-item{background:#fff;border:1px solid #dce8dd;border-radius:12px;padding:14px;margin:12px 0}
-.directory-admin-actions{display:flex;gap:8px;flex-wrap:wrap}
-.directory-status{font-size:.82rem;font-weight:700}
-
-
-/* V23 — DEMANDES DE SERVICES */
-.service-controls{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin:14px 0}.service-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.service-card{background:#fff;border:1px solid #dfe9df;border-radius:14px;padding:17px}.service-card h3{color:var(--green);margin:8px 0}.service-badge{display:inline-block;padding:5px 9px;border-radius:30px;background:#edf4ed;color:#245d38;font-size:.8rem;font-weight:700}.service-form{background:#f7faf7;border:1px solid #dce8dd;border-radius:14px;padding:17px;margin:15px 0}.service-admin{border:1px solid #dce8dd;background:#fff;border-radius:12px;padding:14px;margin:12px 0}.service-actions{display:flex;gap:8px;flex-wrap:wrap}.service-actions button{margin-top:6px}@media(max-width:650px){.service-controls{grid-template-columns:1fr}}
-
-/* V24 — messagerie privée entre membres */
-.message-layout{display:grid;grid-template-columns:minmax(220px, .8fr) minmax(280px,1.5fr);gap:16px}
-.conversation-list{border:1px solid #dce8dd;border-radius:12px;overflow:hidden}
-.conversation-item{display:block;width:100%;text-align:left;margin:0;border-radius:0;background:#fff;color:var(--ink);border-bottom:1px solid #e7eee8;box-shadow:none}
-.conversation-item.active{background:#eaf3eb;color:var(--green)}
-.conversation-item small{display:block;color:var(--muted);font-weight:400;margin-top:4px}
-.chat-panel{border:1px solid #dce8dd;border-radius:12px;padding:14px;min-height:360px;display:flex;flex-direction:column}
-.chat-messages{flex:1;max-height:420px;overflow:auto;padding:8px;background:#f7faf7;border-radius:10px}
-.chat-bubble{max-width:82%;padding:10px 13px;border-radius:13px;margin:9px 0;background:#fff;border:1px solid #e1e9e2;white-space:pre-wrap;overflow-wrap:anywhere}
-.chat-bubble.mine{margin-left:auto;background:#e4f1e6;border-color:#cce1d0}
-.chat-time{display:block;font-size:.72rem;color:var(--muted);margin-top:5px}
-.chat-compose{display:flex;gap:8px;align-items:flex-end;margin-top:12px}
-.chat-compose textarea{min-height:55px;max-height:130px;flex:1}
-.chat-compose button{margin:0}
-@media(max-width:700px){.message-layout{grid-template-columns:1fr}.chat-panel{min-height:300px}.conversation-list{max-height:220px;overflow:auto}}
-
-
-/* V24.1 — correction responsive mobile */
-html, body { width:100%; max-width:100%; min-width:0; overflow-x:hidden; }
-*, *::before, *::after { box-sizing:border-box; }
-img, video, iframe { max-width:100%; }
-input, select, textarea, button { max-width:100%; min-width:0; }
-@media (max-width: 760px) {
-  header { display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:16px; }
-  main { width:100%; margin:16px auto; padding:0 10px; }
-  .hero { min-height:0; display:block; padding:20px 16px; border-radius:16px; }
-  .hero-symbol { display:none; }
-  .hero h1 { font-size:1.65rem; overflow-wrap:anywhere; }
-  .hero p { font-size:.95rem; }
-  .hero-actions { display:grid; grid-template-columns:1fr; gap:8px; }
-  .hero-link { display:block; width:100%; text-align:center; }
-  .grid, .market-grid, .directory-grid, .service-grid {
-    grid-template-columns:minmax(0,1fr) !important;
-  }
-  .card { padding:15px; margin-bottom:14px; }
-  .market-head { display:flex; flex-direction:column; align-items:stretch; gap:8px; }
-  .market-head > button { width:100%; margin-top:0; }
-  .market-controls, .directory-controls, .service-controls {
-    grid-template-columns:minmax(0,1fr) !important;
-  }
-  .market-actions { display:grid; grid-template-columns:1fr; }
-  .market-actions a, .market-actions button { width:100%; text-align:center; }
-  .admin-top { align-items:stretch; flex-direction:column; }
-  .admin-top button { width:100%; }
-  .message-layout { grid-template-columns:minmax(0,1fr) !important; }
-  .conversation-list { max-height:190px; overflow-y:auto; }
-  .chat-panel { min-width:0; padding:10px; min-height:280px; }
-  .chat-messages { max-height:45vh; min-width:0; overflow-wrap:anywhere; }
-  .chat-bubble { max-width:95%; overflow-wrap:anywhere; }
-  .chat-compose { display:flex; flex-direction:column; align-items:stretch; }
-  .chat-compose textarea, .chat-compose button { width:100%; }
-  .chat-compose button { margin-top:4px; }
-  .modal-overlay { padding:8px; }
-  .detail-modal { width:100%; max-width:100%; padding:12px; }
-  .detail-gallery { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .sessionbar button { width:100%; }
-  table { display:block; max-width:100%; overflow-x:auto; }
-}
-@media (max-width:380px) {
-  main { padding:0 8px; }
-  .card { padding:12px; }
-  button { padding:11px 12px; font-size:.94rem; }
-  .hero h1 { font-size:1.45rem; }
-}
-
-
-/* NAVIGATION PAR RUBRIQUES — V25 */
-.main-nav{position:sticky;top:0;z-index:50;background:#fff;border:1px solid #dce8dd;border-radius:14px;padding:8px;margin:0 0 18px;display:flex;gap:7px;overflow-x:auto;box-shadow:0 5px 18px rgba(20,60,35,.08);scrollbar-width:thin}
-.main-nav button{flex:0 0 auto;border:0;border-radius:10px;background:#f1f5f1;color:#244b35;padding:11px 14px;font-weight:700;cursor:pointer;white-space:nowrap}
-.main-nav button[aria-current="page"]{background:var(--green);color:#fff}
-.nav-inactive{display:none!important}
-.nav-heading{margin:0 0 14px;color:var(--green);font-size:1.35rem}
-@media(max-width:600px){.main-nav{margin-left:-4px;margin-right:-4px;border-radius:10px;padding:6px}.main-nav button{padding:10px 12px;font-size:.9rem}main{margin-top:14px}}
-
-
-/* V26 — Sidebar mobile */
-.mobile-menu-toggle{display:none;border:0;border-radius:10px;background:var(--green,#287545);color:#fff;padding:12px 16px;font-weight:800;cursor:pointer;margin:0 0 12px}
-.mobile-nav-overlay{display:none}
-@media(max-width:600px){
- .mobile-menu-toggle{display:inline-flex;align-items:center;gap:8px}
- .main-nav{position:fixed!important;left:0;top:0;bottom:0;width:min(82vw,310px);height:100dvh;max-height:100dvh;z-index:1001!important;margin:0!important;padding:76px 14px 20px!important;border:0!important;border-radius:0 18px 18px 0!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:9px!important;overflow-y:auto!important;overflow-x:hidden!important;background:#fff!important;box-shadow:10px 0 35px rgba(0,0,0,.22)!important;transform:translateX(-110%);transition:transform .25s ease;scrollbar-width:thin}
- .main-nav.mobile-nav-open{transform:translateX(0)}
- .main-nav button{width:100%;text-align:left;white-space:normal;flex:0 0 auto;padding:14px 15px!important;font-size:1rem!important}
- .mobile-nav-overlay.mobile-overlay-open{display:block;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:1000}
- body.mobile-nav-lock{overflow:hidden}
-}
-
-</style>
-</head>
-<body>
-<header>
-  <!-- LOGO DU SITE : remplacer plus tard par le logo officiel -->
-  <div><div class="brand">🐑 RIM AgroOvin Connect</div><div class="tagline">Élever aujourd’hui, nourrir demain</div></div>
-  <span>V26 · Navigation latérale mobile</span>
-</header>
-<main>
-  <button type="button" class="mobile-menu-toggle" id="mobileMenuToggle" aria-expanded="false" aria-controls="mainNavigation">☰ Menu</button>
-  <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
-  <nav class="main-nav" id="mainNavigation" aria-label="Navigation principale">
-    <button type="button" data-view="home" aria-current="page">🏠 Accueil</button>
-    <button type="button" data-view="market">🛒 Marketplace</button>
-    <button type="button" data-view="directory">👥 Annuaire</button>
-    <button type="button" data-view="services">🧰 Services</button>
-    <button type="button" data-view="messages">💬 Messagerie</button>
-    <button type="button" data-view="account">👤 Mon espace</button>
-  </nav>
-  <!-- IMAGE PRINCIPALE - ACCUEIL : ajouter une image de couverture ultérieurement -->
-  <section class="hero"><div class="hero-copy"><span class="hero-kicker">LE MARCHÉ AGROPASTORAL, EN UN SEUL ESPACE</span><h1>Connectons les acteurs<br>du monde agropastoral.</h1><p>Découvrez des annonces, trouvez des produits et rapprochez-vous des éleveurs, agriculteurs et fournisseurs partout en Mauritanie.</p><div class="hero-actions"><a class="hero-link primary" href="#marketplacePublic">Explorer les annonces</a><a class="hero-link outline" href="#authCards">Rejoindre la plateforme</a></div></div><div class="hero-symbol" aria-hidden="true">🐑<span>🌿</span></div></section>
-
-  <section id="marketplacePublic" class="card">
-    <div class="market-head"><div><h2 style="margin-bottom:5px">Marketplace</h2><p class="small">Découvrez les annonces agropastorales disponibles en Mauritanie.</p></div><button class="secondary" id="refreshMarketBtn">Actualiser</button></div>
-    <div class="market-controls">
-      <input id="marketSearch" type="search" placeholder="Rechercher une annonce..." aria-label="Rechercher une annonce">
-      <select id="marketCategory"><option value="">Toutes les catégories</option><option>Ovins</option><option>Aliments &amp; Fourrage</option><option>Légumes &amp; Fruits</option><option>Produits agricoles</option><option>Matériel &amp; Intrants</option></select>
-      <input id="marketCity" type="search" placeholder="Ville / localité" aria-label="Filtrer par ville">
-    </div>
-    <div id="marketListings"><p class="small">Chargement des annonces...</p></div>
-    <div id="marketStatus" class="status"></div>
-  </section>
-
-  <section id="myFavorites" class="card"><div class="market-head"><div><h2 style="margin-bottom:5px">❤️ Mes favoris</h2><p class="small">Retrouvez les annonces enregistrées pour les consulter plus tard. Les favoris sont conservés sur cet appareil.</p></div><button class="secondary" id="showAllFavoritesBtn">Voir toutes les annonces</button></div><div id="favoriteListings"><p class="favorites-empty">Aucune annonce enregistrée pour le moment.</p></div></section>
-
-  <section id="professionalDirectory" class="card">
-    <div class="market-head"><div><h2 style="margin-bottom:5px">Annuaire agropastoral</h2><p class="small">Retrouvez les vendeurs et acteurs actuellement présents sur RIM AgroOvin Connect.</p></div><button class="secondary" id="refreshDirectoryBtn">Actualiser</button></div>
-    <p class="directory-intro">Un répertoire indépendant des annonces : trouvez des éleveurs, vétérinaires, fournisseurs, agriculteurs et prestataires de services en Mauritanie.</p>
-    <div class="directory-form">
-      <h3>Inscrire mon activité professionnelle</h3>
-      <p class="small">La demande est réservée aux membres connectés. Votre fiche sera publiée après vérification par l’équipe RIM AgroOvin.</p>
-      <div id="directoryLoginHint" class="notice">Connectez-vous à votre compte pour soumettre une fiche professionnelle.</div>
-      <form id="professionalForm" class="hidden">
-        <label>Nom complet / Nom de l’établissement</label><input id="proFullName" maxlength="120" required>
-        <label>Profession / Type d’activité</label>
-        <select id="proType" required>
-          <option value="">Choisir une activité</option><option>Éleveur</option><option>Vétérinaire</option><option>Fournisseur d’aliments & fourrage</option><option>Agriculteur</option><option>Prestataire de services</option><option>Commerçant de bétail</option><option>Technicien agricole</option><option>Autre professionnel</option>
-        </select>
-        <label>Description de l’activité</label><textarea id="proDescription" maxlength="1200" placeholder="Présentez vos services, produits ou spécialités..."></textarea>
-        <div class="grid"><div><label>Téléphone</label><input id="proPhone" type="tel" maxlength="30" required></div><div><label>WhatsApp (facultatif)</label><input id="proWhatsapp" type="tel" maxlength="30"></div></div>
-        <div class="grid"><div><label>Ville / Localité</label><input id="proCity" maxlength="100" required></div><div><label>Adresse / Zone d’intervention</label><input id="proAddress" maxlength="180"></div></div>
-        <button type="submit">Soumettre ma fiche</button>
-      </form>
-      <div id="professionalFormStatus" class="status"></div>
-    </div>
-    <div class="directory-controls"><input id="directorySearch" type="search" placeholder="Rechercher un nom, métier ou service"><select id="directoryCategory"><option value="">Toutes les activités</option><option>Éleveur</option><option>Vétérinaire</option><option>Fournisseur d’aliments & fourrage</option><option>Agriculteur</option><option>Prestataire de services</option><option>Commerçant de bétail</option><option>Technicien agricole</option><option>Autre professionnel</option></select><input id="directoryCity" type="search" placeholder="Ville / localité"></div>
-    <div id="directoryCards"><p class="small">Chargement de l’annuaire...</p></div><div id="directoryStatus" class="status"></div>
-  </section>
-
-  <section class="card" id="serviceRequests">
-    <div class="market-head"><div><h2 style="margin-bottom:5px">Demandes de services & prestations</h2><p class="small">Trouvez une aide professionnelle ou publiez un besoin pour votre élevage ou votre activité agricole.</p></div><button class="secondary" id="refreshServicesBtn">Actualiser</button></div>
-    <div class="service-form"><h3 style="color:var(--green);margin-top:0">Publier une demande</h3><p class="small">Connectez-vous pour décrire votre besoin. Votre demande sera visible par les professionnels et membres autorisés de la plateforme.</p>
-      <div id="serviceLoginHint" class="notice">La publication est réservée aux membres connectés.</div>
-      <form id="serviceRequestForm" class="hidden">
-        <label>Type de service recherché</label><select id="serviceCategory" required><option value="">Choisir un service</option><option>Soins vétérinaires</option><option>Vaccination / déparasitage</option><option>Alimentation animale</option><option>Transport d’animaux</option><option>Achat / vente de bétail</option><option>Construction / aménagement d’enclos</option><option>Conseil technique en élevage</option><option>Matériel et équipements</option><option>Travaux agricoles</option><option>Autre prestation</option></select>
-        <label>Titre de la demande</label><input id="serviceTitle" maxlength="140" required placeholder="Ex. Besoin de vaccination pour 25 ovins">
-        <label>Description du besoin</label><textarea id="serviceDescription" maxlength="1500" required placeholder="Précisez le besoin, la quantité, les délais et les détails utiles..."></textarea>
-        <div class="grid"><div><label>Ville / Localité</label><input id="serviceCity" maxlength="100" required></div><div><label>Budget estimatif (MRU, facultatif)</label><input id="serviceBudget" type="number" min="0" step="1"></div></div>
-        <label>Téléphone de contact</label><input id="servicePhone" type="tel" maxlength="30" required>
-        <button type="submit">Publier ma demande</button>
-      </form><div id="serviceFormStatus" class="status"></div>
-    </div>
-    <h3>Demandes disponibles</h3><p class="small">Les demandes ouvertes sont consultables par les membres connectés.</p>
-    <div class="service-controls"><input id="serviceSearch" type="search" placeholder="Rechercher un service ou un besoin"><select id="serviceFilter"><option value="">Tous les services</option><option>Soins vétérinaires</option><option>Vaccination / déparasitage</option><option>Alimentation animale</option><option>Transport d’animaux</option><option>Conseil technique en élevage</option><option>Travaux agricoles</option><option>Autre prestation</option></select></div>
-    <div id="serviceRequestList"><p class="small">Connectez-vous pour consulter les demandes.</p></div><div id="serviceListStatus" class="status"></div>
-    <h3 style="margin-top:25px">Mes demandes</h3><div id="myServiceRequests"><p class="small">Connectez-vous pour suivre vos demandes.</p></div>
-  </section>
-
-
-  <section class="card hidden" id="messagingSection">
-    <div class="market-head"><div><h2 style="margin-bottom:5px">💬 Messagerie</h2><p class="small">Échangez directement avec les membres au sujet d'une demande ou d'une prestation.</p></div><button type="button" class="secondary" id="refreshMessagesBtn">Actualiser</button></div>
-    <div class="message-layout">
-      <div><h3>Mes conversations</h3><div id="conversationList" class="conversation-list"><p class="small" style="padding:12px">Chargement...</p></div><div id="messageStatus" class="status"></div></div>
-      <div class="chat-panel"><div id="chatHeading"><strong>Sélectionnez une conversation</strong><p class="small">Vos échanges privés apparaîtront ici.</p></div><div id="chatMessages" class="chat-messages"><p class="small">Aucune conversation sélectionnée.</p></div>
-        <form id="messageForm" class="chat-compose hidden"><textarea id="messageBody" maxlength="2000" required placeholder="Écrire un message..."></textarea><button type="submit">Envoyer</button></form>
-      </div>
-    </div>
-    <p class="small">Les messages sont privés entre les deux participants. N'envoyez pas de mot de passe ni d'informations sensibles.</p>
-  </section>
-
-  <section class="card hidden" id="recoveryPanel"><h2>Créer un nouveau mot de passe</h2><p class="small">Après avoir ouvert le lien reçu par email, choisis un nouveau mot de passe.</p><form id="recoveryPasswordForm"><label>Nouveau mot de passe</label><input id="recoveryPassword" type="password" minlength="8" required autocomplete="new-password"><label>Confirmer le mot de passe</label><input id="recoveryPasswordConfirm" type="password" minlength="8" required autocomplete="new-password"><button type="submit">Enregistrer le nouveau mot de passe</button></form><div id="recoveryPasswordStatus" class="status"></div></section>
-
-  <div class="sessionbar" id="sessionBar">Session ouverte : <strong id="sessionEmail"></strong> <button class="secondary" id="logoutBtn">Se déconnecter</button></div>
-
-  <section class="grid" id="authCards">
-    <div class="card"><h2>Créer un compte</h2><p class="small">Inscris-toi pour publier tes annonces.</p>
-      <form id="signupForm">
-        <label>Nom complet</label><input id="signupName" required autocomplete="name">
-        <label>Téléphone</label><input id="signupPhone" autocomplete="tel">
-        <label>Ville</label><input id="signupCity" placeholder="Ex. Sélibabi">
-        <label>Type de compte</label><select id="signupRole" required><option value="">Choisir ton profil</option><option value="Acheteur">Acheteur</option><option value="Éleveur">Éleveur</option><option value="Fournisseur">Fournisseur</option><option value="Agriculteur">Agriculteur</option><option value="Vétérinaire">Vétérinaire</option><option value="Prestataire de services">Prestataire de services</option></select>
-        <label>Email</label><input id="signupEmail" type="email" required autocomplete="email">
-        <label>Mot de passe</label><input id="signupPassword" type="password" required minlength="6" autocomplete="new-password">
-        <button class="wide" type="submit">Créer mon compte</button>
-      </form><div id="signupStatus" class="status"></div>
-    </div>
-    <div class="card"><h2>Connexion</h2><p class="small">Tu as déjà un compte ? Connecte-toi.</p>
-      <form id="loginForm">
-        <label>Email</label><input id="loginEmail" type="email" required autocomplete="email">
-        <label>Mot de passe</label><input id="loginPassword" type="password" required autocomplete="current-password">
-        <button class="wide" type="submit">Se connecter</button>
-      </form><div id="loginStatus" class="status"></div>
-      <details style="margin-top:12px"><summary style="cursor:pointer;color:var(--green);font-weight:600">Mot de passe oublié ?</summary>
-        <form id="resetRequestForm" style="margin-top:10px"><label>Adresse email du compte</label><input id="resetEmail" type="email" required autocomplete="email"><button type="submit" class="secondary">Recevoir un lien de réinitialisation</button></form><div id="resetRequestStatus" class="status"></div>
-      </details>
-    </div>
-  </section>
-
-  <section class="card hidden" id="memberArea"><h2>Mon espace membre</h2><p class="small">Tes annonces seront soumises à validation avant leur affichage public.</p>
-  <div class="card" style="margin:12px 0"><h3 style="color:var(--green);margin-top:0">Sécurité du compte</h3><p class="small">Change ton mot de passe depuis une session ouverte.</p><form id="changePasswordForm"><label>Nouveau mot de passe</label><input id="newPassword" type="password" minlength="8" required autocomplete="new-password"><label>Confirmer le nouveau mot de passe</label><input id="confirmPassword" type="password" minlength="8" required autocomplete="new-password"><button type="submit">Mettre à jour le mot de passe</button></form><div id="changePasswordStatus" class="status"></div><p class="small">Ton adresse de connexion actuelle : <strong id="accountEmailLabel"></strong></p></div>
-  <div class="notice">Photos : JPG, PNG ou WebP, 2 Mo maximum par photo.</div>
-  <div class="card notification-card" style="margin-top:16px;margin-bottom:0"><div class="market-head"><div><h3 style="color:var(--green);margin:0">🔔 Mes notifications & suivi</h3><p class="small">Retrouve ici l’état de tes annonces et les informations importantes liées à tes publications.</p></div><button type="button" class="secondary" id="refreshNotificationsBtn">Actualiser</button></div><div id="notificationSummary" class="notice">Chargement du suivi…</div><div id="notificationList"><p class="small">Les informations apparaîtront après le chargement de tes annonces.</p></div><p class="small">Ces alertes sont générées à partir des statuts actuellement enregistrés dans Supabase. Il ne s’agit pas encore de notifications push ou d’alertes instantanées.</p></div>
-  <div class="card" style="margin-top:16px;margin-bottom:0"><h3 style="color:var(--green);margin-top:0">Mon profil vendeur</h3><p class="small">Maintiens tes coordonnées et ton type d’activité à jour pour faciliter les échanges. Le type de compte décrit ton activité ; il ne donne aucun droit d’administration.</p><form id="profileForm"><label>Nom complet</label><input id="profileName" required maxlength="100"><label>Téléphone</label><input id="profilePhone" type="tel" maxlength="30"><label>Ville / Localité</label><input id="profileCity" maxlength="100"><label>Type de compte</label><select id="profileRole"><option value="Acheteur">Acheteur</option><option value="Éleveur">Éleveur</option><option value="Fournisseur">Fournisseur</option><option value="Agriculteur">Agriculteur</option><option value="Vétérinaire">Vétérinaire</option><option value="Prestataire de services">Prestataire de services</option></select><button type="submit">Enregistrer mon profil</button></form><div id="profileStatus" class="status"></div></div></section>
-
-  <section class="card hidden" id="publishCard"><h2>Publier une annonce</h2>
-    <form id="listingForm">
-      <label>Catégorie</label><select id="listingCategory" required>
-        <option value="">Choisir une catégorie</option>
-        <option>Ovins</option><option>Aliments &amp; Fourrage</option><option>Légumes &amp; Fruits</option><option>Produits agricoles</option><option>Matériel &amp; Intrants</option>
-      </select>
-      <label>Titre</label><input id="listingTitle" maxlength="120" required placeholder="Ex. Bélier mauritanien à vendre">
-      <label>Description</label><textarea id="listingDescription" placeholder="Caractéristiques, quantité, état du produit..."></textarea>
-      <div class="grid"><div><label>Prix (MRU)</label><input id="listingPrice" type="number" min="0" step="1" required></div><div><label>Ville / Localité</label><input id="listingCity" required placeholder="Ex. Sélibabi"></div></div>
-      <label>Téléphone de contact</label><input id="listingPhone" type="tel">
-      <label>Photos (facultatif)</label><input id="listingPhotos" type="file" accept="image/jpeg,image/png,image/webp" multiple>
-      <p class="small">Les photos seront stockées dans le bucket public animal-photos.</p>
-      <button class="wide" id="publishBtn" type="submit">Publier mon annonce</button>
-    </form><div id="listingStatus" class="status"></div>
-  </section>
-
-  <section class="card hidden" id="myListingsCard"><h2>Mon espace vendeur</h2><p class="small">Suivez vos publications, modifiez-les et gérez leur disponibilité.</p><div id="sellerSummary" class="grid"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="secondary seller-filter" data-filter="all">Toutes</button><button class="secondary seller-filter" data-filter="pending">En attente</button><button class="secondary seller-filter" data-filter="approved">Approuvées</button><button class="secondary seller-filter" data-filter="rejected">Rejetées</button><button class="secondary seller-filter" data-filter="sold">Vendues</button></div><button class="secondary" id="refreshListingsBtn">Actualiser</button><div id="myListings"><p class="small">Chargement...</p></div><div id="sellerStatus" class="status"></div></section>  <section class="card admin-panel hidden" id="adminPanel">
-    <div class="admin-top"><div><h2>Administration RIM AgroOvin Connect</h2><p class="small">Espace réservé aux membres autorisés de l’équipe.</p></div><button class="secondary" id="refreshAdminBtn">Actualiser</button></div>
-    <div class="grid" id="adminStats"></div>
-    <h3>Annonces à modérer</h3><div id="pendingListings"><p class="small">Chargement...</p></div>
-    <hr style="border:0;border-top:1px solid #dce8dd;margin:24px 0">
-    <h3>Demandes d’inscription à l’annuaire professionnel</h3>
-    <p class="small">Les fiches en attente peuvent être approuvées ou rejetées par un administrateur autorisé.</p>
-    <div id="pendingProfessionals"><p class="small">Chargement...</p></div>
-    <div id="directoryAdminStatus" class="status"></div>
-    <hr style="border:0;border-top:1px solid #dce8dd;margin:24px 0"><h3>Demandes de services à suivre</h3><div id="adminServiceRequests"><p class="small">Chargement...</p></div><div id="adminServiceStatus" class="status"></div>
-    <div id="adminStatus" class="status"></div>
-  </section>
-</main>
-<footer>RIM AgroOvin Connect · V26 — Navigation latérale mobile</footer>
-<script>
 // =====================================
 // CONFIGURATION SUPABASE - RIM AGROOVIN
 // =====================================
-const SUPABASE_URL="https://yxvfmigqkcbiodtgjooi.supabase.co";
+const SUPABASE_URL=RIM_CONFIG.url;
 // Clé publiable uniquement : ne jamais mettre sb_secret ou service_role dans le navigateur.
-const SUPABASE_KEY="sb_publishable_Xp3rhQbII8gAXxVaJPuRKg_bPEJBnCm";
-const PHOTO_BUCKET="animal-photos";
+const SUPABASE_KEY=RIM_CONFIG.key;
+const PHOTO_BUCKET=RIM_CONFIG.photoBucket;
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 function status(id,msg,ok=false){const el=$(id);el.textContent=msg;el.className="status "+(ok?"ok":"err")}
@@ -573,7 +240,7 @@ $("signupForm").addEventListener("submit",async e=>{
  e.preventDefault();const f=e.currentTarget;clearStatus("signupStatus");busy(f,true);
  const full_name=$("signupName").value.trim(),phone=$("signupPhone").value.trim(),city=$("signupCity").value.trim(),role=$("signupRole").value,email=$("signupEmail").value.trim(),password=$("signupPassword").value;
  try{
-  const {data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{full_name,phone,city,role}}});if(error)throw error;
+  const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin+window.location.pathname,data:{full_name,phone,city,role}}});if(error)throw error;
   if(data.session){await saveProfile(data.user,{full_name,phone,city,role});signedIn(data.user);status("signupStatus","Compte créé et profil enregistré.",true)}
   else status("signupStatus","Inscription enregistrée. Vérifie ta boîte email pour confirmer ton adresse, puis connecte-toi.",true);
  }catch(err){status("signupStatus",err.message||"Erreur d'inscription")}finally{busy(f,false)}
@@ -766,12 +433,7 @@ supabaseClient.auth.onAuthStateChange((_event,session)=>{if(session)signedIn(ses
 refreshSession();
 loadMarketplace();
 loadProfessionalDirectory();
-</script>
-
-<div id="listingDetailModal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Détails de l'annonce" onclick="if(event.target===this)closeListingDetails()">
- <div class="detail-modal"><button class="modal-close" onclick="closeListingDetails()" aria-label="Fermer">✕ Fermer</button><div id="listingDetailContent"></div></div>
-</div>
-<script>
+;
 function openListingDetails(id){
  const a=marketData.find(x=>String(x.id)===String(id));if(!a)return;
  const photos=(a.photos||[]).filter(Boolean);
@@ -782,9 +444,7 @@ function openListingDetails(id){
 }
 function closeListingDetails(){ $('listingDetailModal').classList.remove('open');document.body.style.overflow=''; }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeListingDetails()});
-</script>
-
-<script>
+;
 /* Navigation mono-page : les rubriques sont affichées sans recharger le site. */
 (function(){
  const views={
@@ -823,5 +483,3 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeListingDetails(
  window.rimShowView=showView;
  showView('home');
 })();
-</script>
-</body></html>
