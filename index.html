@@ -2,6 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#1b5e20">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="RIM AgroOvin">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
 <title>RIM AgroOvin Connect</title>
 <meta name="description" content="RIM AgroOvin Connect : marché de moutons, annuaire des professionnels de l’élevage et services pour les éleveurs du Guidimakha.">
 <meta property="og:title" content="RIM AgroOvin Connect">
@@ -172,4 +177,13 @@
 <script src="js/config.js"></script>
 <script src="js/confirmation.js"></script>
 <script src="js/portail.js"></script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js")
+      .catch(error => console.error("Erreur Service Worker :", error));
+  });
+}
+</script>
 </body></html>
